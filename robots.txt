@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://us-central1-recruitment-ccbea.cloudfunctions.net/sitemap
