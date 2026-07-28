@@ -1,0 +1,390 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  startAfter,
+  getDocs,
+  doc,
+  setDoc,
+  deleteDoc,
+  getDoc,
+  serverTimestamp,
+  QueryDocumentSnapshot,
+} from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+import { GOVERNORATES } from "@/lib/constants";
+
+type JobPost = {
+  id: string;
+  title: string;
+  specialization: string;
+  city: string;
+  governorate: string;
+  jobType: string;
+  companyName?: string;
+  showCompanyName?: boolean;
+  description?: string;
+  salaryFrom?: number;
+  salaryTo?: number;
+  salaryNegotiable?: boolean;
+  showSalary?: boolean;
+  featured?: boolean;
+  requirements?: string;
+  employerId: string;
+  createdAt?: any;
+};
+
+const PAGE_SIZE = 12;
+
+const JOB_TYPE_LABELS: Record<string, string> = {
+  full_time: "دوام كامل",
+  part_time: "دوام جزئي",
+  remote: "عن بعد",
+  freelance: "فريلانس",
+};
+
+export default function JobsTab() {
+  const [jobs, setJobs] = useState<JobPost[]>([]);
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState("");
+
+  const [specFilter, setSpecFilter] = useState("");
+  const [govFilter, setGovFilter] = useState("");
+  const [jobTypeFilter, setJobTypeFilter] = useState("");
+
+  const [myApplications, setMyApplications] = useState<Set<string>>(new Set());
+  const [selectedJob, setSelectedJob] = useState<JobPost | null>(null);
+  const [applying, setApplying] = useState(false);
+
+  async function loadMyApplications() {
+    const user = auth.currentUser;
+    if (!user) return;
+    const snap = await getDocs(
+      query(collection(db, "applications"), where("seekerId", "==", user.uid))
+    );
+    setMyApplications(new Set(snap.docs.map((d) => d.data().jobPostId)));
+  }
+
+  async function fetchJobs(reset: boolean) {
+    try {
+      const constraints: any[] = [
+        where("isActive", "==", true),
+        orderBy("createdAt", "desc"),
+        limit(PAGE_SIZE),
+      ];
+      if (govFilter) constraints.splice(1, 0, where("governorate", "==", govFilter));
+      if (jobTypeFilter) constraints.splice(1, 0, where("jobType", "==", jobTypeFilter));
+      if (!reset && lastDoc) constraints.push(startAfter(lastDoc));
+
+      const q = query(collection(db, "job_posts"), ...constraints);
+      const snap = await getDocs(q);
+
+      const now = Date.now();
+      const newJobs = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() } as JobPost))
+        .filter((p: any) => !p.expiresAt || p.expiresAt.toMillis() > now);
+
+      setJobs((prev) => (reset ? newJobs : [...prev, ...newJobs]));
+      setLastDoc(snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null);
+      setHasMore(snap.docs.length === PAGE_SIZE);
+      setError("");
+    } catch (err) {
+      console.error("Job fetch failed", err);
+      setError(
+        "حصلت مشكلة في التحميل — افتح Console (F12) وشوف تفاصيل الخطأ. لو الخطأ بيقول \"requires an index\"، هيبقى فيه رابط تدوس عليه يعمل الفهرس المطلوب تلقائيًا."
+      );
+    }
+  }
+
+  async function initialLoad() {
+    setLoading(true);
+    await loadMyApplications();
+    await fetchJobs(true);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    initialLoad();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [govFilter, jobTypeFilter]);
+
+  async function handleLoadMore() {
+    setLoadingMore(true);
+    await fetchJobs(false);
+    setLoadingMore(false);
+  }
+
+  const filteredJobs = jobs.filter((p) => {
+    if (!specFilter.trim()) return true;
+    const haystack = `${p.title} ${p.specialization} ${p.description || ""}`.toLowerCase();
+    return haystack.includes(specFilter.trim().toLowerCase());
+  });
+
+  async function handleApply(job: JobPost) {
+    const user = auth.currentUser;
+    if (!user) return;
+    setApplying(true);
+    try {
+      const seekerDoc = await getDoc(doc(db, "job_seekers", user.uid));
+      const s = seekerDoc.exists() ? seekerDoc.data() : {};
+      const appId = `${job.id}_${user.uid}`;
+      await setDoc(doc(db, "applications", appId), {
+        jobPostId: job.id,
+        employerId: job.employerId,
+        seekerId: user.uid,
+        seekerSnapshot: {
+          fullName: s.fullName || "",
+          phone: s.phone || "",
+          jobTitle: s.jobTitle || "",
+          specialization: s.specialization || "",
+          city: s.city || "",
+          governorate: s.governorate || "",
+          yearsOfExperience: s.yearsOfExperience || 0,
+          cvFileURL: s.cvFileURL || null,
+        },
+        appliedAt: serverTimestamp(),
+      });
+      setMyApplications((prev) => new Set(prev).add(job.id));
+    } catch (err) {
+      console.error("Apply failed", err);
+    }
+    setApplying(false);
+  }
+
+  async function handleCancel(job: JobPost) {
+    const user = auth.currentUser;
+    if (!user) return;
+    if (!confirm("متأكد إنك عايز تلغي التقديم على الوظيفة دي؟")) return;
+    setApplying(true);
+    try {
+      const appId = `${job.id}_${user.uid}`;
+      await deleteDoc(doc(db, "applications", appId));
+      setMyApplications((prev) => {
+        const next = new Set(prev);
+        next.delete(job.id);
+        return next;
+      });
+    } catch (err) {
+      console.error("Cancel failed", err);
+    }
+    setApplying(false);
+  }
+
+  function salaryTeaser(p: JobPost) {
+    if (p.showSalary === false) return "الراتب غير محدد";
+    if (p.salaryNegotiable) return "قابل للتفاوض";
+    if (p.salaryFrom) return `${p.salaryFrom}${p.salaryTo ? " - " + p.salaryTo : "+"} جنيه`;
+    return "الراتب غير محدد";
+  }
+
+  return (
+    <div dir="rtl">
+      {/* الفلاتر */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+        <div>
+          <label style={{ display: "block", fontSize: 13, marginBottom: 4 }}>التخصص / الكلمة المفتاحية</label>
+          <input
+            type="text"
+            value={specFilter}
+            onChange={(e) => setSpecFilter(e.target.value)}
+            placeholder="مثال: محاسبة"
+            style={{ width: "100%", padding: 8, border: "1px solid #ccc", borderRadius: 6 }}
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", fontSize: 13, marginBottom: 4 }}>المحافظة</label>
+          <select
+            value={govFilter}
+            onChange={(e) => setGovFilter(e.target.value)}
+            style={{ width: "100%", padding: 8, border: "1px solid #ccc", borderRadius: 6 }}
+          >
+            <option value="">الكل</option>
+            {GOVERNORATES.map((g) => (
+              <option key={g} value={g}>{g}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label style={{ display: "block", fontSize: 13, marginBottom: 4 }}>نوع الدوام</label>
+          <select
+            value={jobTypeFilter}
+            onChange={(e) => setJobTypeFilter(e.target.value)}
+            style={{ width: "100%", padding: 8, border: "1px solid #ccc", borderRadius: 6 }}
+          >
+            <option value="">الكل</option>
+            <option value="full_time">دوام كامل</option>
+            <option value="part_time">دوام جزئي</option>
+            <option value="remote">عن بعد</option>
+            <option value="freelance">فريلانس</option>
+          </select>
+        </div>
+      </div>
+
+      {loading && <p>جاري التحميل...</p>}
+      {error && <div style={{ color: "#B03A14", padding: 12 }}>{error}</div>}
+
+      {!loading && !error && (
+        <>
+          <div style={{ fontSize: 13, color: "#4A5568", marginBottom: 10 }}>
+            {filteredJobs.length} وظيفة متاحة
+          </div>
+
+          {filteredJobs.length === 0 && (
+            <div style={{ padding: 30, textAlign: "center", color: "#4A5568" }}>
+              مفيش وظائف مطابقة دلوقتي — جرب توسّع الفلاتر
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {filteredJobs.map((p) => {
+              const applied = myApplications.has(p.id);
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => setSelectedJob(p)}
+                  style={{
+                    border: "1px solid #14213D22",
+                    borderRadius: 10,
+                    padding: 16,
+                    cursor: "pointer",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <h4 style={{ margin: 0, fontSize: 16 }}>{p.title}</h4>
+                    {p.featured && (
+                      <span style={{ fontSize: 12, background: "rgba(232,163,61,0.2)", padding: "3px 8px", borderRadius: 999 }}>
+                        ⭐ مميز
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 13, color: "#4A5568", marginTop: 4 }}>
+                    {p.showCompanyName && p.companyName ? p.companyName : "شركة غير معلنة"} · {p.city} - {p.governorate}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                    <span style={tagStyle}>{p.specialization}</span>
+                    <span style={tagStyle}>الراتب: {salaryTeaser(p)}</span>
+                    {applied && (
+                      <span style={{ ...tagStyle, background: "rgba(47,111,78,0.15)", color: "#2F6F4E", fontWeight: 700 }}>
+                        ✓ اتقدمت
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {hasMore && (
+            <div style={{ textAlign: "center", marginTop: 16 }}>
+              <button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                style={{ padding: "8px 20px", border: "1px solid #14213D", borderRadius: 6, background: "transparent", cursor: "pointer" }}
+              >
+                {loadingMore ? "جاري التحميل..." : "تحميل المزيد"}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* مودال تفاصيل الوظيفة */}
+      {selectedJob && (
+        <div
+          onClick={() => setSelectedJob(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(20,33,61,0.55)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 500,
+              width: "100%",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              position: "relative",
+            }}
+          >
+            <button
+              onClick={() => setSelectedJob(null)}
+              style={{
+                position: "absolute",
+                top: 14,
+                left: 14,
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                border: "1.5px solid #ccc",
+                background: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+            <h2 style={{ marginBottom: 4 }}>{selectedJob.title}</h2>
+            <div style={{ color: "#4A5568", marginBottom: 10 }}>
+              {selectedJob.showCompanyName && selectedJob.companyName ? selectedJob.companyName : "شركة غير معلنة"}
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+              <span style={tagStyle}>{selectedJob.specialization}</span>
+              <span style={tagStyle}>{selectedJob.city} - {selectedJob.governorate}</span>
+              <span style={tagStyle}>{JOB_TYPE_LABELS[selectedJob.jobType] || selectedJob.jobType}</span>
+            </div>
+            <p style={{ lineHeight: 1.7 }}>{selectedJob.description}</p>
+            <div style={{ marginTop: 10, fontWeight: 600 }}>الراتب: {salaryTeaser(selectedJob)}</div>
+            {selectedJob.requirements && (
+              <p style={{ marginTop: 10 }}>
+                <strong>الشروط:</strong> {selectedJob.requirements}
+              </p>
+            )}
+            <div style={{ marginTop: 20 }}>
+              {myApplications.has(selectedJob.id) ? (
+                <button
+                  onClick={() => handleCancel(selectedJob)}
+                  disabled={applying}
+                  style={{ padding: "10px 20px", border: "1px solid #B03A14", color: "#B03A14", background: "transparent", borderRadius: 6, cursor: "pointer" }}
+                >
+                  ✕ إلغاء التقديم
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleApply(selectedJob)}
+                  disabled={applying}
+                  style={{ padding: "10px 20px", background: "#14213D", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer" }}
+                >
+                  📩 قدم الآن
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const tagStyle: React.CSSProperties = {
+  fontSize: 12,
+  background: "#F0EDE3",
+  padding: "3px 10px",
+  borderRadius: 999,
+};

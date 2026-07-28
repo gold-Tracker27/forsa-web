@@ -6,10 +6,30 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import OnboardingForm from "./OnboardingForm";
+import JobsTab from "./JobsTab";
+import ProfileTab from "./ProfileTab";
+
+type Status = "loading" | "no-profile" | "has-profile";
 
 export default function SeekerPage() {
   const router = useRouter();
-  const [status, setStatus] = useState<"loading" | "no-profile" | "has-profile">("loading");
+  const [status, setStatus] = useState<Status>("loading");
+  const [profileData, setProfileData] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<"jobs" | "profile">("jobs");
+
+  async function loadProfile() {
+    const user = auth.currentUser;
+    if (!user) return;
+    const profileRef = doc(db, "job_seekers", user.uid);
+    const profileSnap = await getDoc(profileRef);
+
+    if (profileSnap.exists()) {
+      setProfileData(profileSnap.data());
+      setStatus("has-profile");
+    } else {
+      setStatus("no-profile");
+    }
+  }
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -17,18 +37,11 @@ export default function SeekerPage() {
         router.push("/");
         return;
       }
-
-      const profileRef = doc(db, "job_seekers", user.uid);
-      const profileSnap = await getDoc(profileRef);
-
-      if (profileSnap.exists()) {
-        setStatus("has-profile");
-      } else {
-        setStatus("no-profile");
-      }
+      await loadProfile();
     });
 
     return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   if (status === "loading") {
@@ -40,13 +53,54 @@ export default function SeekerPage() {
   }
 
   if (status === "no-profile") {
-    return <OnboardingForm />;
+    return <OnboardingForm onSaved={loadProfile} />;
   }
 
   return (
-    <div dir="rtl" style={{ textAlign: "center", padding: 60 }}>
-      <h2>أهلاً بيك! 🎉</h2>
-      <p>ده داشبورد الباحث عن شغل — هنبنيه في الخطوة اللي بعد كده.</p>
+    <div dir="rtl">
+      {/* شريط التنقل */}
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          justifyContent: "center",
+          padding: "16px 20px",
+          borderBottom: "1px solid #14213D22",
+          marginBottom: 24,
+        }}
+      >
+        <button
+          onClick={() => setActiveTab("jobs")}
+          style={tabButtonStyle(activeTab === "jobs")}
+        >
+          🏠 تصفح الوظائف
+        </button>
+        <button
+          onClick={() => setActiveTab("profile")}
+          style={tabButtonStyle(activeTab === "profile")}
+        >
+          👤 بروفايلي
+        </button>
+      </div>
+
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px 60px" }}>
+        {activeTab === "jobs" && <JobsTab />}
+        {activeTab === "profile" && (
+          <ProfileTab data={profileData} onUpdated={loadProfile} />
+        )}
+      </div>
     </div>
   );
+}
+
+function tabButtonStyle(active: boolean): React.CSSProperties {
+  return {
+    padding: "10px 20px",
+    background: active ? "#14213D" : "transparent",
+    color: active ? "#fff" : "#14213D",
+    border: "1px solid #14213D",
+    borderRadius: 8,
+    cursor: "pointer",
+    fontWeight: 600,
+  };
 }
