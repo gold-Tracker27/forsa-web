@@ -25,6 +25,27 @@ type JobPost = {
   featured?: boolean;
   createdAt?: any;
   expiresAt?: any;
+  vacancies?: number;
+  salaryNegotiable?: boolean;
+  salaryFrom?: number;
+  salaryTo?: number;
+  showSalary?: boolean;
+  ageFrom?: number;
+  ageTo?: number;
+  needsCar?: string;
+  requirements?: string;
+  hoursPerDay?: number;
+  daysOffPerMonth?: number;
+  socialInsurance?: string;
+  privateHealthInsurance?: string;
+  transportationAvailable?: string;
+  transportationAreas?: string;
+  housingForExpats?: string;
+  additionalBenefits?: string;
+  showCompanyName?: boolean;
+  receiveMethod?: string;
+  contactMethod?: string;
+  contactValue?: string;
 };
 
 const JOB_TYPE_LABELS: Record<string, string> = {
@@ -40,18 +61,28 @@ function formatDate(ts: any) {
   return d.toLocaleDateString("ar-EG");
 }
 
+function salaryText(p: JobPost) {
+  if (p.showSalary === false) return "غير محدد";
+  if (p.salaryNegotiable) return "قابل للتفاوض / حسب الخبرة";
+  if (p.salaryFrom && p.salaryTo) return `${p.salaryFrom} - ${p.salaryTo} جنيه`;
+  if (p.salaryFrom) return `يبدأ من ${p.salaryFrom} جنيه`;
+  return "غير محدد";
+}
+
 type Props = {
   companyData: any;
   onCompanyUpdated: () => void;
+  onEditPost: (id: string, data: any) => void;
 };
 
-export default function CompanyTab({ companyData, onCompanyUpdated }: Props) {
+export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }: Props) {
   const [editing, setEditing] = useState(false);
   const [posts, setPosts] = useState<JobPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [applicantCounts, setApplicantCounts] = useState<Record<string, number>>({});
   const [openApplicantsFor, setOpenApplicantsFor] = useState<string | null>(null);
   const [applicants, setApplicants] = useState<any[]>([]);
+  const [detailPost, setDetailPost] = useState<JobPost | null>(null);
 
   async function loadMyJobPosts() {
     const user = auth.currentUser;
@@ -93,8 +124,9 @@ export default function CompanyTab({ companyData, onCompanyUpdated }: Props) {
   }
 
   async function handleDelete(postId: string) {
-    if (!confirm("متأكد إنك عايز تحذف الإعلان نهائيًا؟ الأفضل تستخدم \"إيقاف الإعلان\" بدل الحذف لو ممكن ترجعله لاحقًا.")) return;
+    if (!confirm('متأكد إنك عايز تحذف الإعلان نهائيًا؟ الأفضل تستخدم "إيقاف الإعلان" بدل الحذف لو ممكن ترجعله لاحقًا.')) return;
     await deleteDoc(doc(db, "job_posts", postId));
+    setDetailPost(null);
     loadMyJobPosts();
   }
 
@@ -109,7 +141,7 @@ export default function CompanyTab({ companyData, onCompanyUpdated }: Props) {
   }
 
   function exportCSV(postId: string, jobTitle: string) {
-    const relevant = applicants; // already loaded for this postId via toggleApplicants
+    const relevant = applicants;
     if (relevant.length === 0) {
       alert("لسه مفيش متقدمين على الإعلان ده.");
       return;
@@ -187,23 +219,32 @@ export default function CompanyTab({ companyData, onCompanyUpdated }: Props) {
                   <span style={tagStyle}>👥 {appCount} متقدم</span>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button onClick={() => onEditPost(p.id, p)} style={smallBtnStyle}>✎ تعديل</button>
                   <button onClick={() => toggleActive(p.id, p.isActive === false)} style={smallBtnStyle}>
                     {p.isActive === false ? "▶ إعادة تفعيل" : "⏸ إيقاف الإعلان"}
                   </button>
                   <button onClick={() => handleDelete(p.id)} style={smallBtnStyle}>✕ حذف نهائي</button>
                 </div>
               </div>
-              <div style={{ fontSize: 12, color: "#4A5568", marginBottom: 6 }}>
-                {formatDate(p.createdAt)}
-                {p.isActive !== false && daysLeft !== null ? ` · باقي ${daysLeft} يوم قبل انتهاء الإعلان` : ""}
+              <div
+                onClick={() => setDetailPost(p)}
+                style={{ cursor: "pointer" }}
+              >
+                <div style={{ fontSize: 12, color: "#4A5568", marginBottom: 6 }}>
+                  {formatDate(p.createdAt)}
+                  {p.isActive !== false && daysLeft !== null ? ` · باقي ${daysLeft} يوم قبل انتهاء الإعلان` : ""}
+                </div>
+                <h4 style={{ margin: "0 0 8px" }}>{p.title}</h4>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                  <span style={tagStyle}>{p.specialization}</span>
+                  <span style={tagStyle}>{p.city} - {p.governorate}</span>
+                  <span style={tagStyle}>{JOB_TYPE_LABELS[p.jobType] || p.jobType}</span>
+                </div>
+                <p style={{ fontSize: 14, color: "#333" }}>{(p.description || "").slice(0, 150)}</p>
+                <div style={{ fontSize: 12.5, color: "#14213D", marginTop: 6, textDecoration: "underline" }}>
+                  عرض التفاصيل الكاملة
+                </div>
               </div>
-              <h4 style={{ margin: "0 0 8px" }}>{p.title}</h4>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                <span style={tagStyle}>{p.specialization}</span>
-                <span style={tagStyle}>{p.city} - {p.governorate}</span>
-                <span style={tagStyle}>{JOB_TYPE_LABELS[p.jobType] || p.jobType}</span>
-              </div>
-              <p style={{ fontSize: 14, color: "#333" }}>{(p.description || "").slice(0, 150)}</p>
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
                 <button onClick={() => toggleApplicants(p.id)} style={smallBtnStyle}>
@@ -245,6 +286,122 @@ export default function CompanyTab({ companyData, onCompanyUpdated }: Props) {
           );
         })}
       </div>
+
+      {/* مودال تفاصيل الوظيفة الكاملة */}
+      {detailPost && (
+        <div
+          onClick={() => setDetailPost(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(20,33,61,0.55)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 550,
+              width: "100%",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              position: "relative",
+            }}
+          >
+            <button
+              onClick={() => setDetailPost(null)}
+              style={{
+                position: "absolute",
+                top: 14,
+                left: 14,
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                border: "1.5px solid #ccc",
+                background: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+
+            <h2 style={{ marginBottom: 4 }}>{detailPost.title}</h2>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+              <span style={tagStyle}>{detailPost.specialization}</span>
+              <span style={tagStyle}>{detailPost.city} - {detailPost.governorate}</span>
+              <span style={tagStyle}>{JOB_TYPE_LABELS[detailPost.jobType] || detailPost.jobType}</span>
+              {detailPost.featured && <span style={tagStyle}>⭐ مميز</span>}
+            </div>
+
+            <p style={{ lineHeight: 1.7, marginBottom: 12 }}>{detailPost.description}</p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 13.5 }}>
+              <DetailRow label="الراتب" value={salaryText(detailPost)} />
+              <DetailRow label="عدد الفرص المتاحة" value={detailPost.vacancies ? `${detailPost.vacancies} فرصة` : undefined} />
+              <DetailRow
+                label="السن المطلوب"
+                value={
+                  detailPost.ageFrom && detailPost.ageTo
+                    ? `${detailPost.ageFrom} - ${detailPost.ageTo} سنة`
+                    : detailPost.ageFrom
+                    ? `من ${detailPost.ageFrom} سنة`
+                    : detailPost.ageTo
+                    ? `لحد ${detailPost.ageTo} سنة`
+                    : undefined
+                }
+              />
+              <DetailRow label="محتاج عربية" value={detailPost.needsCar === "yes" ? "أيوة ✓" : detailPost.needsCar === "no" ? "لأ" : undefined} />
+              <DetailRow label="ساعات العمل يوميًا" value={detailPost.hoursPerDay ? `${detailPost.hoursPerDay} ساعات` : undefined} />
+              <DetailRow label="أيام الراحة شهريًا" value={detailPost.daysOffPerMonth !== undefined && detailPost.daysOffPerMonth !== null ? `${detailPost.daysOffPerMonth} يوم` : undefined} />
+              <DetailRow label="تأمين اجتماعي" value={detailPost.socialInsurance === "yes" ? "متوفر ✓" : detailPost.socialInsurance === "no" ? "غير متوفر" : undefined} />
+              <DetailRow label="تأمين صحي خاص" value={detailPost.privateHealthInsurance === "yes" ? "متوفر ✓" : detailPost.privateHealthInsurance === "no" ? "غير متوفر" : undefined} />
+              <DetailRow label="مواصلات" value={detailPost.transportationAvailable === "yes" ? "متوفرة ✓" : detailPost.transportationAvailable === "no" ? "غير متوفرة" : undefined} />
+              <DetailRow label="سكن المغتربين" value={detailPost.housingForExpats === "yes" ? "متوفر ✓" : detailPost.housingForExpats === "no" ? "غير متوفر" : undefined} />
+            </div>
+
+            {detailPost.transportationAreas && (
+              <p style={{ marginTop: 10 }}><strong>أماكن المواصلات:</strong> {detailPost.transportationAreas}</p>
+            )}
+            {detailPost.requirements && (
+              <p style={{ marginTop: 10 }}><strong>الشروط:</strong> {detailPost.requirements}</p>
+            )}
+            {detailPost.additionalBenefits && (
+              <p style={{ marginTop: 10 }}><strong>مزايا إضافية:</strong> {detailPost.additionalBenefits}</p>
+            )}
+            {detailPost.receiveMethod === "contact" && detailPost.contactValue && (
+              <p style={{ marginTop: 10 }}>
+                <strong>التواصل ({{ email: "إيميل", whatsapp: "واتساب", phone: "تليفون" }[detailPost.contactMethod || ""] || detailPost.contactMethod}):</strong> {detailPost.contactValue}
+              </p>
+            )}
+
+            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+              <button
+                onClick={() => { onEditPost(detailPost.id, detailPost); setDetailPost(null); }}
+                style={{ padding: "10px 20px", background: "#14213D", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer" }}
+              >
+                ✎ تعديل الإعلان
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value?: string }) {
+  if (!value) return null;
+  return (
+    <div>
+      <span style={{ fontWeight: 700 }}>{label}: </span>
+      <span>{value}</span>
     </div>
   );
 }

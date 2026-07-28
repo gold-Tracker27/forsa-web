@@ -10,12 +10,14 @@ import CompanyTab from "./CompanyTab";
 import PostJobTab from "./PostJobTab";
 
 type Status = "loading" | "no-profile" | "has-profile";
+type EditingPost = { id: string; data: any } | null;
 
 export default function EmployerPage() {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("loading");
   const [companyData, setCompanyData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<"company" | "postjob">("company");
+  const [editingPost, setEditingPost] = useState<EditingPost>(null);
 
   async function loadCompany() {
     const user = auth.currentUser;
@@ -43,6 +45,11 @@ export default function EmployerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
+  function handleEditRequest(id: string, data: any) {
+    setEditingPost({ id, data });
+    setActiveTab("postjob");
+  }
+
   if (status === "loading") {
     return (
       <div dir="rtl" style={{ textAlign: "center", padding: 60 }}>
@@ -67,24 +74,42 @@ export default function EmployerPage() {
           marginBottom: 24,
         }}
       >
-        <button onClick={() => setActiveTab("company")} style={tabButtonStyle(activeTab === "company")}>
+        <button
+          onClick={() => {
+            setActiveTab("company");
+            setEditingPost(null);
+          }}
+          style={tabButtonStyle(activeTab === "company")}
+        >
           🏠 بيانات الشركة
         </button>
-        <button onClick={() => setActiveTab("postjob")} style={tabButtonStyle(activeTab === "postjob")}>
+        <button
+          onClick={() => {
+            setActiveTab("postjob");
+            setEditingPost(null);
+          }}
+          style={tabButtonStyle(activeTab === "postjob")}
+        >
           📝 نشر وظيفة جديدة
         </button>
       </div>
 
       <div style={{ padding: "0 20px 60px" }}>
         {activeTab === "company" && (
-          <CompanyTab companyData={companyData} onCompanyUpdated={loadCompany} />
+          <CompanyTab
+            companyData={companyData}
+            onCompanyUpdated={loadCompany}
+            onEditPost={handleEditRequest}
+          />
         )}
         {activeTab === "postjob" && (
           <PostJobTab
             employerPlan={companyData?.plan || "free"}
             companyName={companyData?.companyName || ""}
+            editingPost={editingPost}
             onPosted={() => {
               loadCompany();
+              setEditingPost(null);
               setActiveTab("company");
             }}
           />

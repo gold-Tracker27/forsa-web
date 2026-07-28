@@ -1,19 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { GOVERNORATES, GOVERNORATE_CITIES, SPECIALIZATION_OPTIONS } from "@/lib/constants";
 
-const AGE_OPTIONS = Array.from({ length: 50 }, (_, i) => 16 + i); // 16 لـ 65
+const AGE_OPTIONS = Array.from({ length: 50 }, (_, i) => 16 + i);
+
+type EditingPost = { id: string; data: any } | null;
 
 type Props = {
   employerPlan: string;
   companyName: string;
+  editingPost?: EditingPost;
   onPosted: () => void;
 };
 
-export default function PostJobTab({ employerPlan, companyName, onPosted }: Props) {
+export default function PostJobTab({ employerPlan, companyName, editingPost, onPosted }: Props) {
   const [title, setTitle] = useState("");
   const [specSelect, setSpecSelect] = useState("");
   const [specOther, setSpecOther] = useState("");
@@ -50,6 +53,61 @@ export default function PostJobTab({ employerPlan, companyName, onPosted }: Prop
 
   const [submitting, setSubmitting] = useState(false);
 
+  const isEditMode = !!editingPost;
+
+  // تعبئة الاستمارة ببيانات الوظيفة لو إحنا في وضع تعديل
+  useEffect(() => {
+    if (!editingPost) {
+      resetForm();
+      return;
+    }
+    const p = editingPost.data;
+    setTitle(p.title || "");
+
+    const savedSpec = p.specialization || "";
+    if (savedSpec && !SPECIALIZATION_OPTIONS.includes(savedSpec)) {
+      setSpecSelect("other");
+      setSpecOther(savedSpec);
+    } else {
+      setSpecSelect(savedSpec);
+    }
+
+    setJobType(p.jobType || "");
+    setGovernorate(p.governorate || "");
+
+    const savedCity = p.city || "";
+    const cities = GOVERNORATE_CITIES[p.governorate || ""] || [];
+    if (savedCity && !cities.includes(savedCity)) {
+      setCitySelect("other");
+      setCityOther(savedCity);
+    } else {
+      setCitySelect(savedCity);
+    }
+
+    setDescription(p.description || "");
+    setVacancies(p.vacancies?.toString() || "1");
+    setSalaryNegotiable(!!p.salaryNegotiable);
+    setSalaryFrom(p.salaryFrom?.toString() || "");
+    setSalaryTo(p.salaryTo?.toString() || "");
+    setShowSalary(p.showSalary !== false);
+    setAgeFrom(p.ageFrom?.toString() || "");
+    setAgeTo(p.ageTo?.toString() || "");
+    setNeedsCar(p.needsCar || "");
+    setRequirements(p.requirements || "");
+    setHoursPerDay(p.hoursPerDay?.toString() || "");
+    setDaysOffPerMonth(p.daysOffPerMonth?.toString() || "");
+    setSocialInsurance(p.socialInsurance || "");
+    setPrivateHealthInsurance(p.privateHealthInsurance || "");
+    setTransportationAvailable(p.transportationAvailable || "");
+    setTransportationAreas(p.transportationAreas || "");
+    setHousingForExpats(p.housingForExpats || "");
+    setAdditionalBenefits(p.additionalBenefits || "");
+    setShowCompanyName(!!p.showCompanyName);
+    setReceiveMethod(p.receiveMethod === "contact" ? "contact" : "platform");
+    setContactMethod(p.contactMethod || "");
+    setContactValue(p.contactValue || "");
+  }, [editingPost]);
+
   const cities = governorate ? GOVERNORATE_CITIES[governorate] || [] : [];
 
   async function handleSubmit(e: React.FormEvent) {
@@ -57,23 +115,26 @@ export default function PostJobTab({ employerPlan, companyName, onPosted }: Prop
     const user = auth.currentUser;
     if (!user) return;
 
-    const monthlyLimit = employerPlan === "premium" ? 10 : 5;
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
+    // حد النشر الشهري بيتفعّل بس وقت النشر الجديد، مش وقت التعديل
+    if (!isEditMode) {
+      const monthlyLimit = employerPlan === "premium" ? 10 : 5;
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
 
-    const allPostsSnap = await getDocs(query(collection(db, "job_posts"), where("employerId", "==", user.uid)));
-    const postsThisMonth = allPostsSnap.docs.filter((d) => {
-      const t = d.data().createdAt;
-      return t && t.toMillis() >= startOfMonth.getTime();
-    });
-    if (postsThisMonth.length >= monthlyLimit) {
-      alert(
-        employerPlan === "premium"
-          ? `وصلت للحد الأقصى (${monthlyLimit} إعلانات) للباقة المدفوعة الشهر ده.`
-          : `الباقة المجانية بتسمح بحد أقصى ${monthlyLimit} إعلانات جديدة شهريًا، وإنت وصلت للحد ده الشهر ده.`
-      );
-      return;
+      const allPostsSnap = await getDocs(query(collection(db, "job_posts"), where("employerId", "==", user.uid)));
+      const postsThisMonth = allPostsSnap.docs.filter((d) => {
+        const t = d.data().createdAt;
+        return t && t.toMillis() >= startOfMonth.getTime();
+      });
+      if (postsThisMonth.length >= monthlyLimit) {
+        alert(
+          employerPlan === "premium"
+            ? `وصلت للحد الأقصى (${monthlyLimit} إعلانات) للباقة المدفوعة الشهر ده.`
+            : `الباقة المجانية بتسمح بحد أقصى ${monthlyLimit} إعلانات جديدة شهريًا، وإنت وصلت للحد ده الشهر ده.`
+        );
+        return;
+      }
     }
 
     if (receiveMethod === "contact" && (!contactMethod || !contactValue.trim())) {
@@ -120,21 +181,25 @@ export default function PostJobTab({ employerPlan, companyName, onPosted }: Prop
       isActive: true,
     };
 
-    const expiry = new Date();
-    expiry.setDate(expiry.getDate() + (employerPlan === "premium" ? 60 : 30));
-    postData.expiresAt = Timestamp.fromDate(expiry);
-
     try {
-      await addDoc(collection(db, "job_posts"), {
-        ...postData,
-        createdAt: serverTimestamp(),
-      });
-      alert("تم نشر الإعلان بنجاح ✓");
+      if (isEditMode && editingPost) {
+        await updateDoc(doc(db, "job_posts", editingPost.id), postData);
+        alert("تم حفظ التعديلات ✓");
+      } else {
+        const expiry = new Date();
+        expiry.setDate(expiry.getDate() + (employerPlan === "premium" ? 60 : 30));
+        postData.expiresAt = Timestamp.fromDate(expiry);
+        await addDoc(collection(db, "job_posts"), {
+          ...postData,
+          createdAt: serverTimestamp(),
+        });
+        alert("تم نشر الإعلان بنجاح ✓");
+      }
       resetForm();
       onPosted();
     } catch (err: any) {
-      console.error("Job post creation failed", err);
-      alert(err.message || "حصلت مشكلة في نشر الإعلان — جرب تاني.");
+      console.error("Job post save failed", err);
+      alert(err.message || "حصلت مشكلة — جرب تاني.");
     }
     setSubmitting(false);
   }
@@ -173,7 +238,9 @@ export default function PostJobTab({ employerPlan, companyName, onPosted }: Prop
 
   return (
     <div dir="rtl" style={{ maxWidth: 700, margin: "0 auto" }}>
-      <h2 style={{ fontSize: 22, marginBottom: 20 }}>انشر إعلان وظيفة جديد</h2>
+      <h2 style={{ fontSize: 22, marginBottom: 20 }}>
+        {isEditMode ? "تعديل الإعلان" : "انشر إعلان وظيفة جديد"}
+      </h2>
 
       <form onSubmit={handleSubmit}>
         <fieldset style={sectionStyle}>
@@ -396,7 +463,7 @@ export default function PostJobTab({ employerPlan, companyName, onPosted }: Prop
           disabled={submitting}
           style={{ width: "100%", padding: "14px", background: "#14213D", color: "#fff", border: "none", borderRadius: 8, fontSize: 16, fontWeight: 700, cursor: "pointer" }}
         >
-          {submitting ? "جاري النشر..." : "نشر الإعلان"}
+          {submitting ? "جاري الحفظ..." : (isEditMode ? "حفظ التعديلات" : "نشر الإعلان")}
         </button>
       </form>
     </div>
