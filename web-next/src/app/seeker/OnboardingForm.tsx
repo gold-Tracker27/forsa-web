@@ -9,7 +9,14 @@ import {
   GOVERNORATES,
   GOVERNORATE_CITIES,
   SPECIALIZATION_OPTIONS,
+  MILITARY_STATUS_LABELS,
+  SKILL_OPTIONS,
+  LANGUAGE_OPTIONS,
+  SKILL_LEVELS,
+  LANGUAGE_LEVELS,
 } from "@/lib/constants";
+import { SkillEntry, normalizeEntries } from "@/lib/profileFields";
+import SkillLevelPicker from "./SkillLevelPicker";
 
 type ExperienceRow = {
   company: string;
@@ -30,7 +37,12 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
 
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState(() => auth.currentUser?.email || "");
   const [gender, setGender] = useState("");
+  const [militaryStatus, setMilitaryStatus] = useState("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoStatus, setPhotoStatus] = useState("");
+  const [photoURL, setPhotoURL] = useState("");
   const [governorate, setGovernorate] = useState("");
   const [citySelect, setCitySelect] = useState("");
   const [cityOther, setCityOther] = useState("");
@@ -44,7 +56,8 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
   const [expectedSalary, setExpectedSalary] = useState("");
   const [showSalary, setShowSalary] = useState(false);
 
-  const [skillsRaw, setSkillsRaw] = useState("");
+  const [skills, setSkills] = useState<SkillEntry[]>([]);
+  const [languages, setLanguages] = useState<SkillEntry[]>([]);
   const [bio, setBio] = useState("");
   const [cvLink, setCvLink] = useState("");
   const [cvFile, setCvFile] = useState<File | null>(null);
@@ -63,7 +76,10 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
     if (!initialData) return;
     setFullName(initialData.fullName || "");
     setPhone(initialData.phone || "");
+    setEmail(initialData.email || auth.currentUser?.email || "");
     setGender(initialData.gender || "");
+    setMilitaryStatus(initialData.militaryStatus || "");
+    setPhotoURL(initialData.photoURL || "");
     setGovernorate(initialData.governorate || "");
 
     const savedCity = initialData.city || "";
@@ -89,7 +105,8 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
     setJobType(initialData.jobType || "");
     setExpectedSalary(initialData.expectedSalary?.toString() || "");
     setShowSalary(!!initialData.showSalaryToEmployers);
-    setSkillsRaw((initialData.skills || []).join(" • "));
+    setSkills(normalizeEntries(initialData.skills));
+    setLanguages(normalizeEntries(initialData.languages));
     setBio(initialData.bio || "");
     setCvLink(initialData.cvFileURL || "");
     setExperience(initialData.workExperience || []);
@@ -125,14 +142,15 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
 
     setSaving(true);
 
-    const skills = skillsRaw.split("•").map((s) => s.trim()).filter(Boolean);
     const finalCity = citySelect === "other" ? cityOther.trim() : citySelect;
     const finalSpecialization = specSelect === "other" ? specOther.trim() : specSelect;
 
     const data: any = {
       fullName,
       phone,
+      email,
       gender,
+      militaryStatus: gender === "male" ? militaryStatus : "",
       governorate,
       city: finalCity,
       jobTitle,
@@ -143,6 +161,7 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
       expectedSalary: expectedSalary ? Number(expectedSalary) : null,
       showSalaryToEmployers: showSalary,
       skills,
+      languages,
       bio,
       workExperience: experience.filter((row) => row.company || row.jobTitle),
       acceptsCompanyHousing,
@@ -154,6 +173,24 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
       isAvailable: true,
       updatedAt: serverTimestamp(),
     };
+
+    if (photoFile) {
+      if (photoFile.size > 2 * 1024 * 1024) {
+        alert("حجم الصورة أكبر من 2 ميجا — اختار صورة أصغر.");
+        setSaving(false);
+        return;
+      }
+      try {
+        setPhotoStatus("جاري رفع الصورة...");
+        const photoRef = ref(storage, `photos/${user.uid}/${photoFile.name}`);
+        await uploadBytes(photoRef, photoFile);
+        data.photoURL = await getDownloadURL(photoRef);
+        setPhotoStatus("تم رفع الصورة ✓");
+      } catch (err) {
+        console.error("Photo upload failed", err);
+        setPhotoStatus("حصلت مشكلة في رفع الصورة — اتحفظ البروفايل من غيرها");
+      }
+    }
 
     if (cvLink.trim()) data.cvFileURL = cvLink.trim();
 
@@ -209,12 +246,26 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
               <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required style={inputStyle} />
             </div>
             <div>
+              <label style={labelStyle}>البريد الإلكتروني (اختياري)</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="example@email.com" style={inputStyle} />
+            </div>
+            <div>
               <label style={labelStyle}>النوع (اختياري)</label>
               <select value={gender} onChange={(e) => setGender(e.target.value)} style={inputStyle}>
                 <option value="">تفضّل عدم التحديد</option>
                 <option value="male">ذكر</option>
                 <option value="female">أنثى</option>
               </select>
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={labelStyle}>صورة شخصية (اختياري)</label>
+              {photoURL && !photoFile && (
+                <img src={photoURL} alt="صورتك الحالية" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: "50%", marginBottom: 8, display: "block" }} />
+              )}
+              <input type="file" accept="image/*" onChange={(e) => setPhotoFile(e.target.files?.[0] || null)} />
+              <div style={{ fontSize: 12.5, color: "#4A5568", marginTop: 6 }}>
+                {photoStatus || "صورة PNG أو JPG، حد أقصى 2 ميجا"}
+              </div>
             </div>
             <div>
               <label style={labelStyle}>المحافظة</label>
@@ -308,10 +359,8 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
 
         <fieldset style={sectionStyle}>
           <h3 style={h3Style}>📄 السيرة الذاتية والمهارات (اختياري بالكامل)</h3>
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>المهارات (افصل بينها بنقطة)</label>
-            <input type="text" value={skillsRaw} onChange={(e) => setSkillsRaw(e.target.value)} placeholder="Excel • تواصل • Photoshop" style={inputStyle} />
-          </div>
+          <SkillLevelPicker label="المهارات" options={SKILL_OPTIONS} levels={SKILL_LEVELS} value={skills} onChange={setSkills} />
+          <SkillLevelPicker label="اللغات" options={LANGUAGE_OPTIONS} levels={LANGUAGE_LEVELS} value={languages} onChange={setLanguages} />
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>نبذة مختصرة عن نفسك</label>
             <textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="أهم إنجازاتك، نقاط قوتك..." style={{ ...inputStyle, minHeight: 80 }} />
@@ -395,6 +444,17 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
                 <option value="first_class">درجة أولى</option>
               </select>
             </div>
+            {gender === "male" && (
+              <div>
+                <label style={labelStyle}>حالة التجنيد (اختياري)</label>
+                <select value={militaryStatus} onChange={(e) => setMilitaryStatus(e.target.value)} style={inputStyle}>
+                  <option value="">تفضّل عدم التحديد</option>
+                  {Object.entries(MILITARY_STATUS_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 6 }}>
             <input type="checkbox" id="housingCheck" checked={acceptsCompanyHousing} onChange={(e) => setAcceptsCompanyHousing(e.target.checked)} />

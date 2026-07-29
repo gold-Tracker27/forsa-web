@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { GOVERNORATES, GOVERNORATE_CITIES, SPECIALIZATION_OPTIONS } from "@/lib/constants";
+import { GOVERNORATES, GOVERNORATE_CITIES, SPECIALIZATION_OPTIONS, EXPERIENCE_LEVELS } from "@/lib/constants";
 
 const AGE_OPTIONS = Array.from({ length: 50 }, (_, i) => 16 + i);
 
@@ -21,6 +21,7 @@ export default function PostJobTab({ employerPlan, companyName, editingPost, onP
   const [specSelect, setSpecSelect] = useState("");
   const [specOther, setSpecOther] = useState("");
   const [jobType, setJobType] = useState("");
+  const [jobLevel, setJobLevel] = useState("");
   const [governorate, setGovernorate] = useState("");
   const [citySelect, setCitySelect] = useState("");
   const [cityOther, setCityOther] = useState("");
@@ -73,6 +74,7 @@ export default function PostJobTab({ employerPlan, companyName, editingPost, onP
     }
 
     setJobType(p.jobType || "");
+    setJobLevel(p.jobLevel || "");
     setGovernorate(p.governorate || "");
 
     const savedCity = p.city || "";
@@ -154,6 +156,7 @@ export default function PostJobTab({ employerPlan, companyName, editingPost, onP
       title,
       specialization: finalSpecialization,
       jobType,
+      jobLevel,
       governorate,
       city: finalCity,
       vacancies: Number(vacancies || 1),
@@ -209,6 +212,7 @@ export default function PostJobTab({ employerPlan, companyName, editingPost, onP
     setSpecSelect("");
     setSpecOther("");
     setJobType("");
+    setJobLevel("");
     setGovernorate("");
     setCitySelect("");
     setCityOther("");
@@ -272,6 +276,15 @@ export default function PostJobTab({ employerPlan, companyName, editingPost, onP
                 <option value="part_time">دوام جزئي</option>
                 <option value="remote">عن بعد</option>
                 <option value="freelance">فريلانس</option>
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>مستوى الوظيفة (اختياري)</label>
+              <select value={jobLevel} onChange={(e) => setJobLevel(e.target.value)} style={inputStyle}>
+                <option value="">غير محدد</option>
+                {Object.entries(EXPERIENCE_LEVELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
               </select>
             </div>
             <div>

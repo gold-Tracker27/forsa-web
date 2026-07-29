@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import OnboardingForm from "./OnboardingForm";
+import { MILITARY_STATUS_LABELS, SKILL_LEVELS, LANGUAGE_LEVELS } from "@/lib/constants";
+import { normalizeEntries, formatEntries } from "@/lib/profileFields";
 
 const EDUCATION_LABELS: Record<string, string> = {
   none: "بدون مؤهل دراسي",
@@ -47,8 +49,12 @@ export default function ProfileTab({ data, onUpdated }: Props) {
       <h2 style={{ marginBottom: 16 }}>بروفايلك متسجل ✅</h2>
 
       <div style={{ border: "1px solid #14213D22", borderRadius: 10, padding: 20 }}>
+        {data.photoURL && (
+          <img src={data.photoURL} alt="صورتك الشخصية" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: "50%", marginBottom: 14 }} />
+        )}
         <Row label="الاسم" value={data.fullName} />
         <Row label="رقم الموبايل" value={data.phone} />
+        <Row label="البريد الإلكتروني" value={data.email} />
         <Row label="المحافظة" value={data.governorate} />
         <Row label="المدينة" value={data.city} />
         <Row label="المسمى الوظيفي" value={data.jobTitle} />
@@ -59,8 +65,16 @@ export default function ProfileTab({ data, onUpdated }: Props) {
         {data.showSalaryToEmployers && data.expectedSalary && (
           <Row label="الراتب المتوقع" value={`${data.expectedSalary} جنيه`} />
         )}
-        {data.skills && data.skills.length > 0 && (
-          <Row label="المهارات" value={data.skills.join(" • ")} />
+        {(() => {
+          const skills = normalizeEntries(data.skills);
+          return skills.length > 0 && <Row label="المهارات" value={formatEntries(skills, SKILL_LEVELS)} />;
+        })()}
+        {(() => {
+          const languages = normalizeEntries(data.languages);
+          return languages.length > 0 && <Row label="اللغات" value={formatEntries(languages, LANGUAGE_LEVELS)} />;
+        })()}
+        {data.gender === "male" && data.militaryStatus && (
+          <Row label="حالة التجنيد" value={MILITARY_STATUS_LABELS[data.militaryStatus] || data.militaryStatus} />
         )}
         {data.bio && <Row label="نبذة عنك" value={data.bio} />}
         {data.cvFileURL && (

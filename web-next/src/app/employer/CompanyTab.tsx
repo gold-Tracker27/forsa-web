@@ -12,6 +12,8 @@ import {
 import { auth, db } from "@/lib/firebase";
 import EmployerOnboardingForm from "./EmployerOnboardingForm";
 import { toggleJobActive, deleteJobPost, fetchApplicants, exportApplicantsCSV } from "@/lib/jobPostActions";
+import { EXPERIENCE_LEVELS, MILITARY_STATUS_LABELS, SKILL_LEVELS, LANGUAGE_LEVELS } from "@/lib/constants";
+import { normalizeEntries, formatEntries } from "@/lib/profileFields";
 
 type JobPost = {
   id: string;
@@ -20,6 +22,7 @@ type JobPost = {
   city: string;
   governorate: string;
   jobType: string;
+  jobLevel?: string;
   description?: string;
   isActive?: boolean;
   featured?: boolean;
@@ -220,6 +223,7 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
                   <span style={tagStyle}>{p.specialization}</span>
                   <span style={tagStyle}>{p.city} - {p.governorate}</span>
                   <span style={tagStyle}>{JOB_TYPE_LABELS[p.jobType] || p.jobType}</span>
+                  {p.jobLevel && <span style={tagStyle}>{EXPERIENCE_LEVELS[p.jobLevel] || p.jobLevel}</span>}
                 </div>
                 <p style={{ fontSize: 14, color: "#333" }}>{(p.description || "").slice(0, 150)}</p>
                 <div style={{ fontSize: 12.5, color: "#14213D", marginTop: 6, textDecoration: "underline" }}>
@@ -245,13 +249,36 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
                       const s = a.seekerSnapshot || {};
                       return (
                         <div key={i} style={{ background: "#F5EFDE", borderRadius: 8, padding: 12, marginBottom: 8 }}>
-                          <strong>{s.fullName || "بدون اسم"}</strong> — {s.jobTitle || ""}
+                          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                            {s.photoURL && (
+                              <img src={s.photoURL} alt={s.fullName || "المتقدم"} style={{ width: 44, height: 44, objectFit: "cover", borderRadius: "50%", flexShrink: 0 }} />
+                            )}
+                            <div>
+                              <strong>{s.fullName || "بدون اسم"}</strong> — {s.jobTitle || ""}
+                            </div>
+                          </div>
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
                             <span style={tagStyle}>{s.specialization || ""}</span>
                             <span style={tagStyle}>{s.city || ""} - {s.governorate || ""}</span>
                             <span style={tagStyle}>{s.yearsOfExperience || 0} سنوات خبرة</span>
+                            {(() => {
+                              const skills = normalizeEntries(s.skills);
+                              return skills.length > 0 && (
+                                <span style={tagStyle}>🛠 {formatEntries(skills, SKILL_LEVELS)}</span>
+                              );
+                            })()}
+                            {(() => {
+                              const languages = normalizeEntries(s.languages);
+                              return languages.length > 0 && (
+                                <span style={tagStyle}>🌐 {formatEntries(languages, LANGUAGE_LEVELS)}</span>
+                              );
+                            })()}
+                            {s.militaryStatus && (
+                              <span style={tagStyle}>{MILITARY_STATUS_LABELS[s.militaryStatus] || s.militaryStatus}</span>
+                            )}
                           </div>
                           <div style={{ marginTop: 6, fontSize: 13.5 }}>📞 <strong>{s.phone || "—"}</strong></div>
+                          {s.email && <div style={{ marginTop: 4, fontSize: 13.5 }}>✉️ {s.email}</div>}
                           {s.cvFileURL && (
                             <a href={s.cvFileURL} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 6, color: "#14213D" }}>
                               📄 السيرة الذاتية
@@ -318,6 +345,7 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
               <span style={tagStyle}>{detailPost.specialization}</span>
               <span style={tagStyle}>{detailPost.city} - {detailPost.governorate}</span>
               <span style={tagStyle}>{JOB_TYPE_LABELS[detailPost.jobType] || detailPost.jobType}</span>
+              {detailPost.jobLevel && <span style={tagStyle}>{EXPERIENCE_LEVELS[detailPost.jobLevel] || detailPost.jobLevel}</span>}
               {detailPost.featured && <span style={tagStyle}>⭐ مميز</span>}
             </div>
 

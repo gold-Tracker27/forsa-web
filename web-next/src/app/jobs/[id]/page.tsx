@@ -4,6 +4,7 @@ import { db } from "@/lib/firebase";
 import ApplyButton from "./ApplyButton";
 import ShareButton from "@/components/ShareButton";
 import RelatedJobs from "./RelatedJobs";
+import { EXPERIENCE_LEVELS } from "@/lib/constants";
 
 const JOB_TYPE_LABELS: Record<string, string> = {
   full_time: "دوام كامل",
@@ -65,6 +66,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         <span style={tagStyle}>{job.specialization}</span>
         <span style={tagStyle}>{job.city} - {job.governorate}</span>
         <span style={tagStyle}>{JOB_TYPE_LABELS[job.jobType] || job.jobType}</span>
+        {job.jobLevel && <span style={tagStyle}>{EXPERIENCE_LEVELS[job.jobLevel] || job.jobLevel}</span>}
         {job.featured && <span style={tagStyle}>⭐ مميز</span>}
         <ShareButton jobId={job.id} title={job.title} />
       </div>

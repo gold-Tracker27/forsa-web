@@ -35,6 +35,43 @@ export const GOVERNORATE_CITIES: Record<string, string[]> = {
   "مطروح": ["مرسى مطروح","العلمين","السلوم"]
 };
 
+export const EXPERIENCE_LEVELS: Record<string, string> = {
+  entry: "مبتدئ",
+  mid: "متمرّس",
+  manager: "مدير",
+};
+
+export const MILITARY_STATUS_LABELS: Record<string, string> = {
+  completed: "أنهى الخدمة",
+  exempted: "معفى",
+  not_yet: "لم يؤدها بعد",
+};
+
+export const SKILL_OPTIONS = [
+  'Microsoft Excel', 'Microsoft Word', 'PowerPoint', 'التواصل الفعّال', 'العمل الجماعي',
+  'قيادة فريق', 'خدمة العملاء', 'المبيعات والتفاوض', 'إدارة الوقت', 'حل المشكلات',
+  'إدخال البيانات', 'المحاسبة والدفاتر', 'التسويق الرقمي', 'إدارة السوشيال ميديا',
+  'Photoshop', 'التصميم الجرافيكي', 'البرمجة', 'صيانة وكهرباء', 'القيادة (رخصة سواقة)',
+  'اللياقة البدنية', 'الطهي وتحضير الطعام', 'الأمن والحراسة', 'خدمة التوصيل', 'الزراعة',
+];
+
+export const LANGUAGE_OPTIONS = [
+  'العربية', 'الإنجليزية', 'الفرنسية', 'الألمانية', 'الإيطالية',
+  'الإسبانية', 'التركية', 'الصينية (الماندرين)', 'الروسية',
+];
+
+export const SKILL_LEVELS: Record<string, string> = {
+  beginner: "مبتدئ",
+  intermediate: "متوسط",
+  advanced: "متقدم",
+};
+
+export const LANGUAGE_LEVELS: Record<string, string> = {
+  basic: "أساسي",
+  intermediate: "متوسط",
+  fluent: "إجادة تامة",
+};
+
 export const SPECIALIZATION_OPTIONS = [
   'محاسبة', 'مبيعات', 'تسويق', 'خدمة عملاء', 'موارد بشرية',
   'سكرتارية وإدارة مكتبية', 'استقبال', 'تكنولوجيا المعلومات وبرمجة',

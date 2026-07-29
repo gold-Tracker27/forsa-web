@@ -17,8 +17,9 @@ import {
   QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { GOVERNORATES, SPECIALIZATION_OPTIONS } from "@/lib/constants";
+import { GOVERNORATES, SPECIALIZATION_OPTIONS, EXPERIENCE_LEVELS } from "@/lib/constants";
 import ShareButton from "@/components/ShareButton";
+import { buildSeekerSnapshot } from "@/lib/seekerSnapshot";
 
 type JobPost = {
   id: string;
@@ -27,6 +28,7 @@ type JobPost = {
   city: string;
   governorate: string;
   jobType: string;
+  jobLevel?: string;
   companyName?: string;
   showCompanyName?: boolean;
   description?: string;
@@ -61,6 +63,7 @@ export default function JobsTab() {
   const [specOther, setSpecOther] = useState("");
   const [govFilter, setGovFilter] = useState("");
   const [jobTypeFilter, setJobTypeFilter] = useState("");
+  const [jobLevelFilter, setJobLevelFilter] = useState("");
 
   const [myApplications, setMyApplications] = useState<Set<string>>(new Set());
   const [selectedJob, setSelectedJob] = useState<JobPost | null>(null);
@@ -86,6 +89,7 @@ export default function JobsTab() {
       if (specSelect && specSelect !== "other") constraints.splice(1, 0, where("specialization", "==", specSelect));
       if (govFilter) constraints.splice(1, 0, where("governorate", "==", govFilter));
       if (jobTypeFilter) constraints.splice(1, 0, where("jobType", "==", jobTypeFilter));
+      if (jobLevelFilter) constraints.splice(1, 0, where("jobLevel", "==", jobLevelFilter));
       if (!reset && lastDoc) constraints.push(startAfter(lastDoc));
 
       const q = query(collection(db, "job_posts"), ...constraints);
@@ -118,7 +122,7 @@ export default function JobsTab() {
   useEffect(() => {
     initialLoad();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [specSelect, govFilter, jobTypeFilter]);
+  }, [specSelect, govFilter, jobTypeFilter, jobLevelFilter]);
 
   async function handleLoadMore() {
     setLoadingMore(true);
@@ -144,16 +148,7 @@ export default function JobsTab() {
         jobPostId: job.id,
         employerId: job.employerId,
         seekerId: user.uid,
-        seekerSnapshot: {
-          fullName: s.fullName || "",
-          phone: s.phone || "",
-          jobTitle: s.jobTitle || "",
-          specialization: s.specialization || "",
-          city: s.city || "",
-          governorate: s.governorate || "",
-          yearsOfExperience: s.yearsOfExperience || 0,
-          cvFileURL: s.cvFileURL || null,
-        },
+        seekerSnapshot: buildSeekerSnapshot(s),
         appliedAt: serverTimestamp(),
       });
       setMyApplications((prev) => new Set(prev).add(job.id));
@@ -192,7 +187,7 @@ export default function JobsTab() {
   return (
     <div dir="rtl">
       {/* الفلاتر */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}>
         <div>
           <label style={{ display: "block", fontSize: 13, marginBottom: 4 }}>التخصص</label>
           <select
@@ -243,6 +238,19 @@ export default function JobsTab() {
             <option value="freelance">فريلانس</option>
           </select>
         </div>
+        <div>
+          <label style={{ display: "block", fontSize: 13, marginBottom: 4 }}>مستوى الوظيفة</label>
+          <select
+            value={jobLevelFilter}
+            onChange={(e) => setJobLevelFilter(e.target.value)}
+            style={{ width: "100%", padding: 8, border: "1px solid #ccc", borderRadius: 6 }}
+          >
+            <option value="">الكل</option>
+            {Object.entries(EXPERIENCE_LEVELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading && <p>جاري التحميل...</p>}
@@ -290,6 +298,7 @@ export default function JobsTab() {
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
                     <span style={tagStyle}>{p.specialization}</span>
+                    {p.jobLevel && <span style={tagStyle}>{EXPERIENCE_LEVELS[p.jobLevel] || p.jobLevel}</span>}
                     <span style={tagStyle}>الراتب: {salaryTeaser(p)}</span>
                     {applied && (
                       <span style={{ ...tagStyle, background: "rgba(47,111,78,0.15)", color: "#2F6F4E", fontWeight: 700 }}>
@@ -368,6 +377,7 @@ export default function JobsTab() {
               <span style={tagStyle}>{selectedJob.specialization}</span>
               <span style={tagStyle}>{selectedJob.city} - {selectedJob.governorate}</span>
               <span style={tagStyle}>{JOB_TYPE_LABELS[selectedJob.jobType] || selectedJob.jobType}</span>
+              {selectedJob.jobLevel && <span style={tagStyle}>{EXPERIENCE_LEVELS[selectedJob.jobLevel] || selectedJob.jobLevel}</span>}
             </div>
             <p style={{ lineHeight: 1.7 }}>{selectedJob.description}</p>
             <div style={{ marginTop: 10, fontWeight: 600 }}>الراتب: {salaryTeaser(selectedJob)}</div>

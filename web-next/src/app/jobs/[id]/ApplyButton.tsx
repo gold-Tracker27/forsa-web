@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { buildSeekerSnapshot } from "@/lib/seekerSnapshot";
 
 type Props = {
   jobId: string;
@@ -46,16 +47,7 @@ export default function ApplyButton({ jobId, employerId }: Props) {
         jobPostId: jobId,
         employerId,
         seekerId: user.uid,
-        seekerSnapshot: {
-          fullName: s.fullName || "",
-          phone: s.phone || "",
-          jobTitle: s.jobTitle || "",
-          specialization: s.specialization || "",
-          city: s.city || "",
-          governorate: s.governorate || "",
-          yearsOfExperience: s.yearsOfExperience || 0,
-          cvFileURL: s.cvFileURL || null,
-        },
+        seekerSnapshot: buildSeekerSnapshot(s),
         appliedAt: serverTimestamp(),
       });
       setApplied(true);

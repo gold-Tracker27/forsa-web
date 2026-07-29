@@ -7,6 +7,8 @@ import { auth, db } from "@/lib/firebase";
 import ShareButton from "@/components/ShareButton";
 import PostJobTab from "../employer/PostJobTab";
 import { toggleJobActive, deleteJobPost, fetchApplicants, exportApplicantsCSV } from "@/lib/jobPostActions";
+import { EXPERIENCE_LEVELS, MILITARY_STATUS_LABELS, SKILL_LEVELS, LANGUAGE_LEVELS } from "@/lib/constants";
+import { normalizeEntries, formatEntries } from "@/lib/profileFields";
 
 const ADMIN_EMAILS = ["elshoghl27@gmail.com", "mohamedzakaria2727@gmail.com"];
 
@@ -198,6 +200,7 @@ export default function AdminPage() {
               <span style={tagStyle}>{p.specialization}</span>
               <span style={tagStyle}>{p.city} - {p.governorate}</span>
               <span style={tagStyle}>{JOB_TYPE_LABELS[p.jobType] || p.jobType}</span>
+              {p.jobLevel && <span style={tagStyle}>{EXPERIENCE_LEVELS[p.jobLevel] || p.jobLevel}</span>}
               <span style={{ ...tagStyle, fontWeight: 700 }}>👥 {p.applicantCount} متقدم</span>
               <ShareButton jobId={p.id} title={p.title} />
               <a
@@ -228,13 +231,36 @@ export default function AdminPage() {
                     const s = a.seekerSnapshot || {};
                     return (
                       <div key={i} style={{ background: "#F5EFDE", borderRadius: 8, padding: 12, marginBottom: 8 }}>
-                        <strong>{s.fullName || "بدون اسم"}</strong> — {s.jobTitle || ""}
+                        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                          {s.photoURL && (
+                            <img src={s.photoURL} alt={s.fullName || "المتقدم"} style={{ width: 44, height: 44, objectFit: "cover", borderRadius: "50%", flexShrink: 0 }} />
+                          )}
+                          <div>
+                            <strong>{s.fullName || "بدون اسم"}</strong> — {s.jobTitle || ""}
+                          </div>
+                        </div>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
                           <span style={tagStyle}>{s.specialization || ""}</span>
                           <span style={tagStyle}>{s.city || ""} - {s.governorate || ""}</span>
                           <span style={tagStyle}>{s.yearsOfExperience || 0} سنوات خبرة</span>
+                          {(() => {
+                            const skills = normalizeEntries(s.skills);
+                            return skills.length > 0 && (
+                              <span style={tagStyle}>🛠 {formatEntries(skills, SKILL_LEVELS)}</span>
+                            );
+                          })()}
+                          {(() => {
+                            const languages = normalizeEntries(s.languages);
+                            return languages.length > 0 && (
+                              <span style={tagStyle}>🌐 {formatEntries(languages, LANGUAGE_LEVELS)}</span>
+                            );
+                          })()}
+                          {s.militaryStatus && (
+                            <span style={tagStyle}>{MILITARY_STATUS_LABELS[s.militaryStatus] || s.militaryStatus}</span>
+                          )}
                         </div>
                         <div style={{ marginTop: 6, fontSize: 13.5 }}>📞 <strong>{s.phone || "—"}</strong></div>
+                        {s.email && <div style={{ marginTop: 4, fontSize: 13.5 }}>✉️ {s.email}</div>}
                         {s.cvFileURL && (
                           <a href={s.cvFileURL} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 6, color: "#14213D" }}>
                             📄 السيرة الذاتية
