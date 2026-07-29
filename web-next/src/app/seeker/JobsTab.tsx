@@ -18,29 +18,9 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { GOVERNORATES, SPECIALIZATION_OPTIONS, EXPERIENCE_LEVELS } from "@/lib/constants";
-import ShareButton from "@/components/ShareButton";
 import { buildSeekerSnapshot } from "@/lib/seekerSnapshot";
-
-type JobPost = {
-  id: string;
-  title: string;
-  specialization: string;
-  city: string;
-  governorate: string;
-  jobType: string;
-  jobLevel?: string;
-  companyName?: string;
-  showCompanyName?: boolean;
-  description?: string;
-  salaryFrom?: number;
-  salaryTo?: number;
-  salaryNegotiable?: boolean;
-  showSalary?: boolean;
-  featured?: boolean;
-  requirements?: string;
-  employerId: string;
-  createdAt?: any;
-};
+import { fetchSavedJobIds, setJobSaved } from "@/lib/savedJobs";
+import JobCard, { JobPost, salaryTeaser, tagStyle } from "./JobCard";
 
 const PAGE_SIZE = 12;
 
@@ -66,6 +46,7 @@ export default function JobsTab() {
   const [jobLevelFilter, setJobLevelFilter] = useState("");
 
   const [myApplications, setMyApplications] = useState<Set<string>>(new Set());
+  const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
   const [selectedJob, setSelectedJob] = useState<JobPost | null>(null);
   const [applying, setApplying] = useState(false);
 
@@ -76,6 +57,29 @@ export default function JobsTab() {
       query(collection(db, "applications"), where("seekerId", "==", user.uid))
     );
     setMyApplications(new Set(snap.docs.map((d) => d.data().jobPostId)));
+  }
+
+  async function loadMySavedJobs() {
+    const user = auth.currentUser;
+    if (!user) return;
+    setSavedJobs(await fetchSavedJobIds(user.uid));
+  }
+
+  async function handleToggleSave(jobId: string) {
+    const user = auth.currentUser;
+    if (!user) return;
+    const isSaved = savedJobs.has(jobId);
+    try {
+      await setJobSaved(jobId, user.uid, !isSaved);
+      setSavedJobs((prev) => {
+        const next = new Set(prev);
+        if (isSaved) next.delete(jobId);
+        else next.add(jobId);
+        return next;
+      });
+    } catch (err) {
+      console.error("Toggle save failed", err);
+    }
   }
 
   async function fetchJobs(reset: boolean) {
@@ -114,7 +118,7 @@ export default function JobsTab() {
 
   async function initialLoad() {
     setLoading(true);
-    await loadMyApplications();
+    await Promise.all([loadMyApplications(), loadMySavedJobs()]);
     await fetchJobs(true);
     setLoading(false);
   }
@@ -175,13 +179,6 @@ export default function JobsTab() {
       console.error("Cancel failed", err);
     }
     setApplying(false);
-  }
-
-  function salaryTeaser(p: JobPost) {
-    if (p.showSalary === false) return "الراتب غير محدد";
-    if (p.salaryNegotiable) return "قابل للتفاوض";
-    if (p.salaryFrom) return `${p.salaryFrom}${p.salaryTo ? " - " + p.salaryTo : "+"} جنيه`;
-    return "الراتب غير محدد";
   }
 
   return (
@@ -269,46 +266,16 @@ export default function JobsTab() {
           )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {filteredJobs.map((p) => {
-              const applied = myApplications.has(p.id);
-              return (
-                <div
-                  key={p.id}
-                  onClick={() => setSelectedJob(p)}
-                  style={{
-                    border: "1px solid #14213D22",
-                    borderRadius: 10,
-                    padding: 16,
-                    cursor: "pointer",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <h4 style={{ margin: 0, fontSize: 16 }}>{p.title}</h4>
-                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                      {p.featured && (
-                        <span style={{ fontSize: 12, background: "rgba(232,163,61,0.2)", padding: "3px 8px", borderRadius: 999 }}>
-                          ⭐ مميز
-                        </span>
-                      )}
-                      <ShareButton jobId={p.id} title={p.title} />
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 13, color: "#4A5568", marginTop: 4 }}>
-                    {p.showCompanyName && p.companyName ? p.companyName : "شركة غير معلنة"} · {p.city} - {p.governorate}
-                  </div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                    <span style={tagStyle}>{p.specialization}</span>
-                    {p.jobLevel && <span style={tagStyle}>{EXPERIENCE_LEVELS[p.jobLevel] || p.jobLevel}</span>}
-                    <span style={tagStyle}>الراتب: {salaryTeaser(p)}</span>
-                    {applied && (
-                      <span style={{ ...tagStyle, background: "rgba(47,111,78,0.15)", color: "#2F6F4E", fontWeight: 700 }}>
-                        ✓ اتقدمت
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {filteredJobs.map((p) => (
+              <JobCard
+                key={p.id}
+                job={p}
+                applied={myApplications.has(p.id)}
+                saved={savedJobs.has(p.id)}
+                onToggleSave={() => handleToggleSave(p.id)}
+                onClick={() => setSelectedJob(p)}
+              />
+            ))}
           </div>
 
           {hasMore && (
@@ -386,7 +353,7 @@ export default function JobsTab() {
                 <strong>الشروط:</strong> {selectedJob.requirements}
               </p>
             )}
-            <div style={{ marginTop: 20 }}>
+            <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
               {myApplications.has(selectedJob.id) ? (
                 <button
                   onClick={() => handleCancel(selectedJob)}
@@ -404,6 +371,19 @@ export default function JobsTab() {
                   📩 قدم الآن
                 </button>
               )}
+              <button
+                onClick={() => handleToggleSave(selectedJob.id)}
+                style={{
+                  padding: "10px 20px",
+                  border: "1px solid #14213D",
+                  background: savedJobs.has(selectedJob.id) ? "#14213D" : "transparent",
+                  color: savedJobs.has(selectedJob.id) ? "#fff" : "#14213D",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                }}
+              >
+                {savedJobs.has(selectedJob.id) ? "★ محفوظة" : "☆ حفظ الوظيفة"}
+              </button>
             </div>
           </div>
         </div>
@@ -411,10 +391,3 @@ export default function JobsTab() {
     </div>
   );
 }
-
-const tagStyle: React.CSSProperties = {
-  fontSize: 12,
-  background: "#F0EDE3",
-  padding: "3px 10px",
-  borderRadius: 999,
-};

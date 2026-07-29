@@ -8,6 +8,7 @@ import { auth, db } from "@/lib/firebase";
 import OnboardingForm from "./OnboardingForm";
 import JobsTab from "./JobsTab";
 import ProfileTab from "./ProfileTab";
+import SavedJobsTab from "./SavedJobsTab";
 
 type Status = "loading" | "no-profile" | "has-profile";
 
@@ -15,7 +16,7 @@ export default function SeekerPage() {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("loading");
   const [profileData, setProfileData] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"jobs" | "profile">("jobs");
+  const [activeTab, setActiveTab] = useState<"jobs" | "saved" | "profile">("jobs");
 
   async function loadProfile() {
     const user = auth.currentUser;
@@ -76,6 +77,12 @@ export default function SeekerPage() {
           🏠 تصفح الوظائف
         </button>
         <button
+          onClick={() => setActiveTab("saved")}
+          style={tabButtonStyle(activeTab === "saved")}
+        >
+          🔖 الوظائف المحفوظة
+        </button>
+        <button
           onClick={() => setActiveTab("profile")}
           style={tabButtonStyle(activeTab === "profile")}
         >
@@ -85,6 +92,7 @@ export default function SeekerPage() {
 
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px 60px" }}>
         {activeTab === "jobs" && <JobsTab />}
+        {activeTab === "saved" && <SavedJobsTab />}
         {activeTab === "profile" && (
           <ProfileTab data={profileData} onUpdated={loadProfile} />
         )}
