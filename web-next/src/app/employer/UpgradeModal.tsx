@@ -62,6 +62,7 @@ export default function UpgradeModal({ onClose }: Props) {
           <li>عدد إعلانات أكبر شهريًا — <strong>10 إعلانات</strong> بدل 5</li>
           <li>إمكانية تمييز إعلاناتك بشارة <strong>⭐ مميز</strong></li>
           <li>ظهور إعلاناتك المميزة <strong>في الأول</strong> في نتائج بحث الباحثين عن عمل</li>
+          <li>التواصل المباشر مع الكوادر (تليفون وإيميل) من تبويب <strong>"البحث عن كوادر"</strong></li>
         </ul>
 
         <p style={{ fontSize: 13.5, color: "#4A5568", marginBottom: 12 }}>

@@ -9,6 +9,7 @@ import EmployerOnboardingForm from "./EmployerOnboardingForm";
 import CompanyTab from "./CompanyTab";
 import PostJobTab from "./PostJobTab";
 import UpgradeModal from "./UpgradeModal";
+import TalentSearchTab from "./TalentSearchTab";
 
 type Status = "loading" | "no-profile" | "has-profile";
 type EditingPost = { id: string; data: any } | null;
@@ -17,7 +18,7 @@ export default function EmployerPage() {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("loading");
   const [companyData, setCompanyData] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"company" | "postjob">("company");
+  const [activeTab, setActiveTab] = useState<"company" | "postjob" | "talent">("company");
   const [editingPost, setEditingPost] = useState<EditingPost>(null);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
@@ -115,6 +116,15 @@ export default function EmployerPage() {
         >
           📝 نشر وظيفة جديدة
         </button>
+        <button
+          onClick={() => {
+            setActiveTab("talent");
+            setEditingPost(null);
+          }}
+          style={tabButtonStyle(activeTab === "talent")}
+        >
+          🔍 البحث عن كوادر
+        </button>
       </div>
 
       <div style={{ padding: "0 20px 60px" }}>
@@ -136,6 +146,9 @@ export default function EmployerPage() {
               setActiveTab("company");
             }}
           />
+        )}
+        {activeTab === "talent" && (
+          <TalentSearchTab employerPlan={companyData?.plan || "free"} />
         )}
       </div>
 

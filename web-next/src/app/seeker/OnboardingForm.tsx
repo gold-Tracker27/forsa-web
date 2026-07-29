@@ -14,6 +14,7 @@ import {
   LANGUAGE_OPTIONS,
   SKILL_LEVELS,
   LANGUAGE_LEVELS,
+  EXPERIENCE_LEVELS,
 } from "@/lib/constants";
 import { SkillEntry, normalizeEntries } from "@/lib/profileFields";
 import SkillLevelPicker from "./SkillLevelPicker";
@@ -53,6 +54,7 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
   const [yearsOfExperience, setYearsOfExperience] = useState("");
   const [educationLevel, setEducationLevel] = useState("");
   const [jobType, setJobType] = useState("");
+  const [jobLevel, setJobLevel] = useState("");
   const [expectedSalary, setExpectedSalary] = useState("");
   const [showSalary, setShowSalary] = useState(false);
 
@@ -68,6 +70,7 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
   const [licenseType, setLicenseType] = useState("none");
   const [acceptsCompanyHousing, setAcceptsCompanyHousing] = useState(false);
   const [hideCompanyNames, setHideCompanyNames] = useState(false);
+  const [consentToShare, setConsentToShare] = useState(true);
 
   const [saving, setSaving] = useState(false);
 
@@ -103,6 +106,7 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
     setYearsOfExperience(initialData.yearsOfExperience?.toString() || "");
     setEducationLevel(initialData.educationLevel || "");
     setJobType(initialData.jobType || "");
+    setJobLevel(initialData.jobLevel || "");
     setExpectedSalary(initialData.expectedSalary?.toString() || "");
     setShowSalary(!!initialData.showSalaryToEmployers);
     setSkills(normalizeEntries(initialData.skills));
@@ -114,6 +118,7 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
     setLicenseType(initialData.licenseType || "none");
     setAcceptsCompanyHousing(!!initialData.acceptsCompanyHousing);
     setHideCompanyNames(!!initialData.hideCompanyNames);
+    setConsentToShare(initialData.consentToShare !== false);
   }, [initialData]);
 
   const cities = governorate ? GOVERNORATE_CITIES[governorate] || [] : [];
@@ -158,6 +163,7 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
       yearsOfExperience: Number(yearsOfExperience || 0),
       educationLevel,
       jobType,
+      jobLevel,
       expectedSalary: expectedSalary ? Number(expectedSalary) : null,
       showSalaryToEmployers: showSalary,
       skills,
@@ -168,7 +174,7 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
       hasCar,
       licenseType,
       hideCompanyNames,
-      consentToShare: true,
+      consentToShare,
       consentDate: serverTimestamp(),
       isAvailable: true,
       updatedAt: serverTimestamp(),
@@ -347,6 +353,15 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
               </select>
             </div>
             <div>
+              <label style={labelStyle}>مستوى الوظيفة المطلوب (اختياري)</label>
+              <select value={jobLevel} onChange={(e) => setJobLevel(e.target.value)} style={inputStyle}>
+                <option value="">تفضّل عدم التحديد</option>
+                {Object.entries(EXPERIENCE_LEVELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label style={labelStyle}>الراتب المتوقع (اختياري)</label>
               <input type="number" min="0" value={expectedSalary} onChange={(e) => setExpectedSalary(e.target.value)} style={inputStyle} />
               <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
@@ -464,8 +479,14 @@ export default function OnboardingForm({ initialData, onSaved }: Props) {
 
         <fieldset style={{ ...sectionStyle, background: "#F5EFDE" }}>
           <h3 style={h3Style}>🔒 الخصوصية</h3>
-          <p style={{ fontSize: 13, color: "#4A5568", marginBottom: 10 }}>
-            بروفايلك بيظهر لأصحاب الأعمال المسجلين عشان يقدروا يوصلولك ويعرضوا عليك فرص.
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+            <input type="checkbox" id="consentToShareCheck" checked={consentToShare} onChange={(e) => setConsentToShare(e.target.checked)} />
+            <label htmlFor="consentToShareCheck" style={{ fontSize: 13.5 }}>
+              أظهر بروفايلي لأصحاب الأعمال في البحث عن كوادر، عشان يقدروا يوصلولي ويعرضوا عليّ فرص
+            </label>
+          </div>
+          <p style={{ fontSize: 12.5, color: "#4A5568", marginBottom: 10 }}>
+            لو مبسوطتش الخيار ده، بروفايلك مش هيظهر في نتائج بحث أصحاب الأعمال — لكن تقدر تفضل تقدّم على الوظائف عادي.
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <input type="checkbox" id="hideCompanyNamesCheck" checked={hideCompanyNames} onChange={(e) => setHideCompanyNames(e.target.checked)} />
