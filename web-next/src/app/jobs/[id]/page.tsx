@@ -2,6 +2,8 @@ import { doc, getDoc } from "firebase/firestore";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/firebase";
 import ApplyButton from "./ApplyButton";
+import ShareButton from "@/components/ShareButton";
+import RelatedJobs from "./RelatedJobs";
 
 const JOB_TYPE_LABELS: Record<string, string> = {
   full_time: "دوام كامل",
@@ -64,6 +66,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         <span style={tagStyle}>{job.city} - {job.governorate}</span>
         <span style={tagStyle}>{JOB_TYPE_LABELS[job.jobType] || job.jobType}</span>
         {job.featured && <span style={tagStyle}>⭐ مميز</span>}
+        <ShareButton jobId={job.id} title={job.title} />
       </div>
 
       <p style={{ lineHeight: 1.8, marginBottom: 20 }}>{job.description}</p>
@@ -104,6 +107,8 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
       ) : (
         <ApplyButton jobId={job.id} employerId={job.employerId} />
       )}
+
+      <RelatedJobs jobId={job.id} specialization={job.specialization} governorate={job.governorate} />
     </div>
   );
 }

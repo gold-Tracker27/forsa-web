@@ -8,10 +8,10 @@ import {
   getDocs,
   doc,
   updateDoc,
-  deleteDoc,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import EmployerOnboardingForm from "./EmployerOnboardingForm";
+import { toggleJobActive, deleteJobPost, fetchApplicants, exportApplicantsCSV } from "@/lib/jobPostActions";
 
 type JobPost = {
   id: string;
@@ -119,13 +119,13 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
   }, []);
 
   async function toggleActive(postId: string, makeActive: boolean) {
-    await updateDoc(doc(db, "job_posts", postId), { isActive: makeActive });
+    await toggleJobActive(postId, makeActive);
     loadMyJobPosts();
   }
 
   async function handleDelete(postId: string) {
     if (!confirm('متأكد إنك عايز تحذف الإعلان نهائيًا؟ الأفضل تستخدم "إيقاف الإعلان" بدل الحذف لو ممكن ترجعله لاحقًا.')) return;
-    await deleteDoc(doc(db, "job_posts", postId));
+    await deleteJobPost(postId);
     setDetailPost(null);
     loadMyJobPosts();
   }
@@ -136,30 +136,11 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
       return;
     }
     setOpenApplicantsFor(postId);
-    const snap = await getDocs(query(collection(db, "applications"), where("jobPostId", "==", postId)));
-    setApplicants(snap.docs.map((d) => d.data()));
+    setApplicants(await fetchApplicants(postId));
   }
 
   function exportCSV(postId: string, jobTitle: string) {
-    const relevant = applicants;
-    if (relevant.length === 0) {
-      alert("لسه مفيش متقدمين على الإعلان ده.");
-      return;
-    }
-    const headers = ["الاسم", "المسمى الوظيفي", "التخصص", "المحافظة", "المدينة", "سنوات الخبرة", "التليفون"];
-    let csv = "\uFEFF" + headers.join(",") + "\n";
-    relevant.forEach((a) => {
-      const s = a.seekerSnapshot || {};
-      const row = [s.fullName || "", s.jobTitle || "", s.specialization || "", s.governorate || "", s.city || "", s.yearsOfExperience || 0, s.phone || ""];
-      csv += row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",") + "\n";
-    });
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `applicants-${jobTitle}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportApplicantsCSV(postId, jobTitle);
   }
 
   if (editing) {
@@ -184,7 +165,7 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
         )}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
           <span style={tagStyle}>{companyData.companyName}</span>
-          <span style={tagStyle}>{companyData.industry}</span>
+          {companyData.industry && <span style={tagStyle}>{companyData.industry}</span>}
           <span style={tagStyle}>{companyData.city} - {companyData.governorate}</span>
         </div>
         <p style={{ color: "#4A5568", fontSize: 14 }}>

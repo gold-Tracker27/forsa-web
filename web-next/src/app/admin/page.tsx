@@ -4,8 +4,13 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import ShareButton from "@/components/ShareButton";
+import PostJobTab from "../employer/PostJobTab";
+import { toggleJobActive, deleteJobPost, fetchApplicants, exportApplicantsCSV } from "@/lib/jobPostActions";
 
 const ADMIN_EMAILS = ["elshoghl27@gmail.com", "mohamedzakaria2727@gmail.com"];
+
+type EditingPost = { id: string; data: any } | null;
 
 const JOB_TYPE_LABELS: Record<string, string> = {
   full_time: "دوام كامل",
@@ -34,6 +39,9 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [editingPost, setEditingPost] = useState<EditingPost>(null);
+  const [openApplicantsFor, setOpenApplicantsFor] = useState<string | null>(null);
+  const [applicants, setApplicants] = useState<any[]>([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -85,6 +93,26 @@ export default function AdminPage() {
       console.error("Admin stats failed", err);
     }
     setLoadingStats(false);
+  }
+
+  async function handleToggleActive(postId: string, makeActive: boolean) {
+    await toggleJobActive(postId, makeActive);
+    loadStats();
+  }
+
+  async function handleDelete(postId: string) {
+    if (!confirm('متأكد إنك عايز تحذف الإعلان نهائيًا؟ ده إجراء نهائي ومش هينفع ترجع فيه.')) return;
+    await deleteJobPost(postId);
+    loadStats();
+  }
+
+  async function handleToggleApplicants(postId: string) {
+    if (openApplicantsFor === postId) {
+      setOpenApplicantsFor(null);
+      return;
+    }
+    setOpenApplicantsFor(postId);
+    setApplicants(await fetchApplicants(postId));
   }
 
   if (status === "loading") {
@@ -148,24 +176,135 @@ export default function AdminPage() {
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {posts.map((p) => (
           <div key={p.id} style={{ border: "1px solid #14213D22", borderRadius: 10, padding: 16 }}>
-            <div style={{ fontSize: 12, color: "#4A5568", marginBottom: 6 }}>
-              {formatDate(p.createdAt)} · {p.isActive === false ? "متوقف" : "نشط"}
-              {p.featured ? " · ⭐ مميز" : ""}
+            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+              <div style={{ fontSize: 12, color: "#4A5568" }}>
+                {formatDate(p.createdAt)} · {p.isActive === false ? "متوقف" : "نشط"}
+                {p.featured ? " · ⭐ مميز" : ""}
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={() => setEditingPost({ id: p.id, data: p })} style={smallBtnStyle}>✎ تعديل</button>
+                <button onClick={() => handleToggleActive(p.id, p.isActive === false)} style={smallBtnStyle}>
+                  {p.isActive === false ? "▶ إعادة تفعيل" : "⏸ إيقاف الإعلان"}
+                </button>
+                <button onClick={() => handleDelete(p.id)} style={smallBtnStyle}>✕ حذف نهائي</button>
+              </div>
             </div>
             <h4 style={{ margin: "0 0 6px" }}>{p.title}</h4>
             <div style={{ fontSize: 13, color: "#4A5568", marginBottom: 8 }}>
               {p.companyName || "بدون اسم شركة"}
               {!p.showCompanyName ? " (مخفي عن الباحثين)" : ""}
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
               <span style={tagStyle}>{p.specialization}</span>
               <span style={tagStyle}>{p.city} - {p.governorate}</span>
               <span style={tagStyle}>{JOB_TYPE_LABELS[p.jobType] || p.jobType}</span>
               <span style={{ ...tagStyle, fontWeight: 700 }}>👥 {p.applicantCount} متقدم</span>
+              <ShareButton jobId={p.id} title={p.title} />
+              <a
+                href={`/jobs/${p.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ ...tagStyle, textDecoration: "none", color: "#14213D" }}
+              >
+                🔗 عرض الصفحة العامة
+              </a>
             </div>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button onClick={() => handleToggleApplicants(p.id)} style={smallBtnStyle}>
+                👥 عرض المتقدمين ({p.applicantCount})
+              </button>
+              {p.applicantCount > 0 && (
+                <button onClick={() => exportApplicantsCSV(p.id, p.title)} style={smallBtnStyle}>⬇ تحميل Excel</button>
+              )}
+            </div>
+
+            {openApplicantsFor === p.id && (
+              <div style={{ marginTop: 12 }}>
+                {applicants.length === 0 ? (
+                  <div style={{ padding: 12, color: "#4A5568" }}>لسه محدش قدّم على الإعلان ده.</div>
+                ) : (
+                  applicants.map((a, i) => {
+                    const s = a.seekerSnapshot || {};
+                    return (
+                      <div key={i} style={{ background: "#F5EFDE", borderRadius: 8, padding: 12, marginBottom: 8 }}>
+                        <strong>{s.fullName || "بدون اسم"}</strong> — {s.jobTitle || ""}
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
+                          <span style={tagStyle}>{s.specialization || ""}</span>
+                          <span style={tagStyle}>{s.city || ""} - {s.governorate || ""}</span>
+                          <span style={tagStyle}>{s.yearsOfExperience || 0} سنوات خبرة</span>
+                        </div>
+                        <div style={{ marginTop: 6, fontSize: 13.5 }}>📞 <strong>{s.phone || "—"}</strong></div>
+                        {s.cvFileURL && (
+                          <a href={s.cvFileURL} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 6, color: "#14213D" }}>
+                            📄 السيرة الذاتية
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>
+
+      {editingPost && (
+        <div
+          onClick={() => setEditingPost(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(20,33,61,0.55)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 750,
+              width: "100%",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              position: "relative",
+            }}
+          >
+            <button
+              onClick={() => setEditingPost(null)}
+              style={{
+                position: "absolute",
+                top: 14,
+                left: 14,
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                border: "1.5px solid #ccc",
+                background: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+            <PostJobTab
+              employerPlan={editingPost.data.featured ? "premium" : "free"}
+              companyName={editingPost.data.companyName || ""}
+              editingPost={editingPost}
+              onPosted={() => {
+                setEditingPost(null);
+                loadStats();
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -180,3 +319,4 @@ function StatCard({ label, value }: { label: string; value: number }) {
 }
 
 const tagStyle: React.CSSProperties = { fontSize: 12, background: "#F0EDE3", padding: "3px 10px", borderRadius: 999 };
+const smallBtnStyle: React.CSSProperties = { padding: "6px 12px", fontSize: 13, border: "1px solid #14213D", background: "transparent", borderRadius: 6, cursor: "pointer" };

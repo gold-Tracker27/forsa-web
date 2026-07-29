@@ -18,7 +18,7 @@ const tajawal = Tajawal({
 
 export const metadata: Metadata = {
   title: "الشغل - منصة توظيف مصرية",
-  description: "منصة الشغل - منصة مصرية للتوظيف تربط الباحثين عن عمل بأصحاب الأعمال مباشرة، مجاني ١٠٠٪ للباحثين عن عمل.",
+  description: "الشغل: منصة توظيف مصرية للباحثين عن عمل وأصحاب الأعمال — وظائف يدوية ومكتبية بكل مصر.",
 };
 
 export default function RootLayout({

@@ -17,7 +17,8 @@ import {
   QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { GOVERNORATES } from "@/lib/constants";
+import { GOVERNORATES, SPECIALIZATION_OPTIONS } from "@/lib/constants";
+import ShareButton from "@/components/ShareButton";
 
 type JobPost = {
   id: string;
@@ -56,7 +57,8 @@ export default function JobsTab() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
-  const [specFilter, setSpecFilter] = useState("");
+  const [specSelect, setSpecSelect] = useState("");
+  const [specOther, setSpecOther] = useState("");
   const [govFilter, setGovFilter] = useState("");
   const [jobTypeFilter, setJobTypeFilter] = useState("");
 
@@ -77,9 +79,11 @@ export default function JobsTab() {
     try {
       const constraints: any[] = [
         where("isActive", "==", true),
+        orderBy("featured", "desc"),
         orderBy("createdAt", "desc"),
         limit(PAGE_SIZE),
       ];
+      if (specSelect && specSelect !== "other") constraints.splice(1, 0, where("specialization", "==", specSelect));
       if (govFilter) constraints.splice(1, 0, where("governorate", "==", govFilter));
       if (jobTypeFilter) constraints.splice(1, 0, where("jobType", "==", jobTypeFilter));
       if (!reset && lastDoc) constraints.push(startAfter(lastDoc));
@@ -114,7 +118,7 @@ export default function JobsTab() {
   useEffect(() => {
     initialLoad();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [govFilter, jobTypeFilter]);
+  }, [specSelect, govFilter, jobTypeFilter]);
 
   async function handleLoadMore() {
     setLoadingMore(true);
@@ -123,9 +127,9 @@ export default function JobsTab() {
   }
 
   const filteredJobs = jobs.filter((p) => {
-    if (!specFilter.trim()) return true;
+    if (specSelect !== "other" || !specOther.trim()) return true;
     const haystack = `${p.title} ${p.specialization} ${p.description || ""}`.toLowerCase();
-    return haystack.includes(specFilter.trim().toLowerCase());
+    return haystack.includes(specOther.trim().toLowerCase());
   });
 
   async function handleApply(job: JobPost) {
@@ -190,14 +194,27 @@ export default function JobsTab() {
       {/* الفلاتر */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
         <div>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 4 }}>التخصص / الكلمة المفتاحية</label>
-          <input
-            type="text"
-            value={specFilter}
-            onChange={(e) => setSpecFilter(e.target.value)}
-            placeholder="مثال: محاسبة"
+          <label style={{ display: "block", fontSize: 13, marginBottom: 4 }}>التخصص</label>
+          <select
+            value={specSelect}
+            onChange={(e) => setSpecSelect(e.target.value)}
             style={{ width: "100%", padding: 8, border: "1px solid #ccc", borderRadius: 6 }}
-          />
+          >
+            <option value="">كل التخصصات</option>
+            {SPECIALIZATION_OPTIONS.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+            <option value="other">بحث حر (كلمة مفتاحية)</option>
+          </select>
+          {specSelect === "other" && (
+            <input
+              type="text"
+              value={specOther}
+              onChange={(e) => setSpecOther(e.target.value)}
+              placeholder="مثال: محاسب أول"
+              style={{ width: "100%", padding: 8, border: "1px solid #ccc", borderRadius: 6, marginTop: 8 }}
+            />
+          )}
         </div>
         <div>
           <label style={{ display: "block", fontSize: 13, marginBottom: 4 }}>المحافظة</label>
@@ -259,11 +276,14 @@ export default function JobsTab() {
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <h4 style={{ margin: 0, fontSize: 16 }}>{p.title}</h4>
-                    {p.featured && (
-                      <span style={{ fontSize: 12, background: "rgba(232,163,61,0.2)", padding: "3px 8px", borderRadius: 999 }}>
-                        ⭐ مميز
-                      </span>
-                    )}
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      {p.featured && (
+                        <span style={{ fontSize: 12, background: "rgba(232,163,61,0.2)", padding: "3px 8px", borderRadius: 999 }}>
+                          ⭐ مميز
+                        </span>
+                      )}
+                      <ShareButton jobId={p.id} title={p.title} />
+                    </div>
                   </div>
                   <div style={{ fontSize: 13, color: "#4A5568", marginTop: 4 }}>
                     {p.showCompanyName && p.companyName ? p.companyName : "شركة غير معلنة"} · {p.city} - {p.governorate}

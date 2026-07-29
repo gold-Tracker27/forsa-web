@@ -8,6 +8,7 @@ import { auth, db } from "@/lib/firebase";
 import EmployerOnboardingForm from "./EmployerOnboardingForm";
 import CompanyTab from "./CompanyTab";
 import PostJobTab from "./PostJobTab";
+import UpgradeModal from "./UpgradeModal";
 
 type Status = "loading" | "no-profile" | "has-profile";
 type EditingPost = { id: string; data: any } | null;
@@ -18,6 +19,7 @@ export default function EmployerPage() {
   const [companyData, setCompanyData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<"company" | "postjob">("company");
   const [editingPost, setEditingPost] = useState<EditingPost>(null);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
   async function loadCompany() {
     const user = auth.currentUser;
@@ -62,8 +64,29 @@ export default function EmployerPage() {
     return <EmployerOnboardingForm onSaved={loadCompany} />;
   }
 
+  const isPremium = companyData?.plan === "premium";
+
   return (
     <div dir="rtl">
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "16px 20px 0",
+        }}
+      >
+        <span style={isPremium ? premiumBadgeStyle : freeBadgeStyle}>
+          {isPremium ? "⭐ الباقة المدفوعة" : "الباقة المجانية"}
+        </span>
+        {!isPremium && (
+          <button onClick={() => setUpgradeModalOpen(true)} style={upgradeBtnStyle}>
+            🚀 طلب الترقية للباقة المدفوعة
+          </button>
+        )}
+      </div>
+
       <div
         style={{
           display: "flex",
@@ -115,9 +138,15 @@ export default function EmployerPage() {
           />
         )}
       </div>
+
+      {upgradeModalOpen && <UpgradeModal onClose={() => setUpgradeModalOpen(false)} />}
     </div>
   );
 }
+
+const freeBadgeStyle: React.CSSProperties = { fontSize: 12, background: "#F0EDE3", padding: "3px 10px", borderRadius: 999, fontWeight: 700 };
+const premiumBadgeStyle: React.CSSProperties = { fontSize: 12, background: "rgba(232,163,61,0.2)", padding: "3px 10px", borderRadius: 999, fontWeight: 700, color: "#C97F1F" };
+const upgradeBtnStyle: React.CSSProperties = { padding: "8px 16px", background: "#E8A33D", color: "#14213D", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13.5 };
 
 function tabButtonStyle(active: boolean): React.CSSProperties {
   return {

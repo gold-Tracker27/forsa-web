@@ -129,11 +129,10 @@ export default function EmployerOnboardingForm({ initialData, onSaved }: Props) 
           </div>
 
           <div style={{ gridColumn: "1 / -1" }}>
-            <label style={labelStyle}>نبذة عن الشركة</label>
+            <label style={labelStyle}>نبذة عن الشركة (اختياري)</label>
             <textarea
               value={industry}
               onChange={(e) => setIndustry(e.target.value)}
-              required
               placeholder="مجال عمل الشركة ونبذة مختصرة عنها"
               style={{ ...inputStyle, minHeight: 80 }}
             />

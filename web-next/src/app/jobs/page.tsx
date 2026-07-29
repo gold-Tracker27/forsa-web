@@ -25,7 +25,8 @@ async function getActiveJobs() {
   const now = Date.now();
   return snap.docs
     .map((d) => ({ id: d.id, ...d.data() } as any))
-    .filter((p) => !p.expiresAt || p.expiresAt.toMillis() > now);
+    .filter((p) => !p.expiresAt || p.expiresAt.toMillis() > now)
+    .sort((a, b) => Number(!!b.featured) - Number(!!a.featured));
 }
 
 export default async function JobsListPage() {

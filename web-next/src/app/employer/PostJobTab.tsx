@@ -148,7 +148,7 @@ export default function PostJobTab({ employerPlan, companyName, editingPost, onP
     const finalSpecialization = specSelect === "other" ? specOther.trim() : specSelect;
 
     const postData: any = {
-      employerId: user.uid,
+      employerId: isEditMode && editingPost ? editingPost.data.employerId : user.uid,
       companyName,
       showCompanyName,
       title,

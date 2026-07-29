@@ -20,6 +20,7 @@ export default function Footer() {
         <Link href="/about" style={linkStyle}>من نحن</Link>
         <Link href="/privacy" style={linkStyle}>سياسة الخصوصية</Link>
         <Link href="/terms" style={linkStyle}>الشروط والأحكام</Link>
+        <Link href="/faq" style={linkStyle}>الأسئلة الشائعة</Link>
         <Link href="/contact" style={linkStyle}>تواصل معنا</Link>
         
 <a href="https://www.facebook.com/profile.php?id=61592211902381" target="_blank" rel="noopener noreferrer" style={linkStyle}>
