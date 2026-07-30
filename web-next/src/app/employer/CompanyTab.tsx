@@ -14,6 +14,7 @@ import EmployerOnboardingForm from "./EmployerOnboardingForm";
 import { toggleJobActive, deleteJobPost, fetchApplicants, exportApplicantsCSV } from "@/lib/jobPostActions";
 import { EXPERIENCE_LEVELS, MILITARY_STATUS_LABELS, SKILL_LEVELS, LANGUAGE_LEVELS } from "@/lib/constants";
 import { normalizeEntries, formatEntries } from "@/lib/profileFields";
+import ShareButton from "@/components/ShareButton";
 
 type JobPost = {
   id: string;
@@ -225,6 +226,7 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
                   <span style={tagStyle}>{p.city} - {p.governorate}</span>
                   <span style={tagStyle}>{JOB_TYPE_LABELS[p.jobType] || p.jobType}</span>
                   {p.jobLevel && <span style={tagStyle}>{EXPERIENCE_LEVELS[p.jobLevel] || p.jobLevel}</span>}
+                  <ShareButton jobId={p.id} title={p.title} />
                 </div>
                 <p style={{ fontSize: 14, color: "#333" }}>{(p.description || "").slice(0, 150)}</p>
                 <div style={{ fontSize: 12.5, color: "#14213D", marginTop: 6, textDecoration: "underline" }}>
