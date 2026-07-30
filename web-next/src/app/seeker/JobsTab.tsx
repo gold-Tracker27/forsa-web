@@ -21,6 +21,7 @@ import { GOVERNORATES, SPECIALIZATION_OPTIONS, EXPERIENCE_LEVELS } from "@/lib/c
 import { buildSeekerSnapshot } from "@/lib/seekerSnapshot";
 import { fetchSavedJobIds, setJobSaved } from "@/lib/savedJobs";
 import JobCard, { JobPost, salaryTeaser, tagStyle } from "./JobCard";
+import ScreeningQuestionsModal from "@/components/ScreeningQuestionsModal";
 
 const PAGE_SIZE = 12;
 
@@ -49,6 +50,7 @@ export default function JobsTab() {
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
   const [selectedJob, setSelectedJob] = useState<JobPost | null>(null);
   const [applying, setApplying] = useState(false);
+  const [showQuestionsModal, setShowQuestionsModal] = useState(false);
 
   async function loadMyApplications() {
     const user = auth.currentUser;
@@ -140,7 +142,7 @@ export default function JobsTab() {
     return haystack.includes(specOther.trim().toLowerCase());
   });
 
-  async function handleApply(job: JobPost) {
+  async function handleApply(job: JobPost, answers: Record<string, string> = {}) {
     const user = auth.currentUser;
     if (!user) return;
     setApplying(true);
@@ -153,13 +155,23 @@ export default function JobsTab() {
         employerId: job.employerId,
         seekerId: user.uid,
         seekerSnapshot: buildSeekerSnapshot(s),
+        screeningAnswers: answers,
         appliedAt: serverTimestamp(),
       });
       setMyApplications((prev) => new Set(prev).add(job.id));
+      setShowQuestionsModal(false);
     } catch (err) {
       console.error("Apply failed", err);
     }
     setApplying(false);
+  }
+
+  function handleApplyClick(job: JobPost) {
+    if (job.screeningQuestions && job.screeningQuestions.length > 0) {
+      setShowQuestionsModal(true);
+    } else {
+      handleApply(job);
+    }
   }
 
   async function handleCancel(job: JobPost) {
@@ -364,7 +376,7 @@ export default function JobsTab() {
                 </button>
               ) : (
                 <button
-                  onClick={() => handleApply(selectedJob)}
+                  onClick={() => handleApplyClick(selectedJob)}
                   disabled={applying}
                   style={{ padding: "10px 20px", background: "#14213D", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer" }}
                 >
@@ -387,6 +399,15 @@ export default function JobsTab() {
             </div>
           </div>
         </div>
+      )}
+
+      {showQuestionsModal && selectedJob && (
+        <ScreeningQuestionsModal
+          questions={selectedJob.screeningQuestions || []}
+          submitting={applying}
+          onCancel={() => setShowQuestionsModal(false)}
+          onSubmit={(answers) => handleApply(selectedJob, answers)}
+        />
       )}
     </div>
   );

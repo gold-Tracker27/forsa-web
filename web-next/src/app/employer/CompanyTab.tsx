@@ -23,6 +23,7 @@ type JobPost = {
   governorate: string;
   jobType: string;
   jobLevel?: string;
+  screeningQuestions?: { id: string; text: string; type: "text" | "number"; required: boolean }[];
   description?: string;
   isActive?: boolean;
   featured?: boolean;
@@ -283,6 +284,18 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
                             <a href={s.cvFileURL} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 6, color: "#14213D" }}>
                               📄 السيرة الذاتية
                             </a>
+                          )}
+                          {a.screeningAnswers && p.screeningQuestions && p.screeningQuestions.length > 0 && (
+                            <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #14213D22" }}>
+                              <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 4 }}>إجابات أسئلة الفرز:</div>
+                              {p.screeningQuestions.map((q) =>
+                                a.screeningAnswers[q.id] ? (
+                                  <div key={q.id} style={{ fontSize: 13, marginTop: 3 }}>
+                                    <strong>{q.text}:</strong> {a.screeningAnswers[q.id]}
+                                  </div>
+                                ) : null
+                              )}
+                            </div>
                           )}
                         </div>
                       );

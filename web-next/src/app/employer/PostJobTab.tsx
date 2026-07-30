@@ -3,11 +3,19 @@
 import { useEffect, useState } from "react";
 import { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { GOVERNORATES, GOVERNORATE_CITIES, SPECIALIZATION_OPTIONS, EXPERIENCE_LEVELS } from "@/lib/constants";
+import { GOVERNORATES, GOVERNORATE_CITIES, SPECIALIZATION_OPTIONS, EXPERIENCE_LEVELS, SCREENING_QUESTION_OPTIONS } from "@/lib/constants";
 
 const AGE_OPTIONS = Array.from({ length: 50 }, (_, i) => 16 + i);
 
 type EditingPost = { id: string; data: any } | null;
+
+type ScreeningQuestion = { id: string; text: string; type: "text" | "number"; required: boolean };
+
+function generateQuestionId() {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `q_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
 
 type Props = {
   employerPlan: string;
@@ -46,6 +54,10 @@ export default function PostJobTab({ employerPlan, companyName, editingPost, onP
   const [transportationAreas, setTransportationAreas] = useState("");
   const [housingForExpats, setHousingForExpats] = useState("");
   const [additionalBenefits, setAdditionalBenefits] = useState("");
+
+  const [screeningQuestions, setScreeningQuestions] = useState<ScreeningQuestion[]>([]);
+  const [newQuestionSelect, setNewQuestionSelect] = useState("");
+  const [newQuestionOther, setNewQuestionOther] = useState("");
 
   const [showCompanyName, setShowCompanyName] = useState(false);
   const [receiveMethod, setReceiveMethod] = useState<"platform" | "contact">("platform");
@@ -104,6 +116,7 @@ export default function PostJobTab({ employerPlan, companyName, editingPost, onP
     setTransportationAreas(p.transportationAreas || "");
     setHousingForExpats(p.housingForExpats || "");
     setAdditionalBenefits(p.additionalBenefits || "");
+    setScreeningQuestions(p.screeningQuestions || []);
     setShowCompanyName(!!p.showCompanyName);
     setReceiveMethod(p.receiveMethod === "contact" ? "contact" : "platform");
     setContactMethod(p.contactMethod || "");
@@ -111,6 +124,34 @@ export default function PostJobTab({ employerPlan, companyName, editingPost, onP
   }, [editingPost]);
 
   const cities = governorate ? GOVERNORATE_CITIES[governorate] || [] : [];
+
+  const availableQuestionOptions = SCREENING_QUESTION_OPTIONS.filter(
+    (q) => !screeningQuestions.some((added) => added.text === q.text)
+  );
+
+  function addScreeningQuestion() {
+    const isOther = newQuestionSelect === "other";
+    const text = isOther ? newQuestionOther.trim() : newQuestionSelect;
+    if (!text) return;
+
+    const preset = SCREENING_QUESTION_OPTIONS.find((q) => q.text === text);
+    setScreeningQuestions([
+      ...screeningQuestions,
+      { id: generateQuestionId(), text, type: preset?.type || "text", required: false },
+    ]);
+    setNewQuestionSelect("");
+    setNewQuestionOther("");
+  }
+
+  function removeScreeningQuestion(id: string) {
+    setScreeningQuestions(screeningQuestions.filter((q) => q.id !== id));
+  }
+
+  function toggleScreeningQuestionRequired(id: string) {
+    setScreeningQuestions(
+      screeningQuestions.map((q) => (q.id === id ? { ...q, required: !q.required } : q))
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -180,6 +221,7 @@ export default function PostJobTab({ employerPlan, companyName, editingPost, onP
       contactMethod: receiveMethod === "contact" ? contactMethod : "",
       contactValue: receiveMethod === "contact" ? contactValue : "",
       additionalBenefits: additionalBenefits || "",
+      screeningQuestions,
       featured: employerPlan === "premium",
       isActive: true,
     };
@@ -234,6 +276,9 @@ export default function PostJobTab({ employerPlan, companyName, editingPost, onP
     setTransportationAreas("");
     setHousingForExpats("");
     setAdditionalBenefits("");
+    setScreeningQuestions([]);
+    setNewQuestionSelect("");
+    setNewQuestionOther("");
     setShowCompanyName(false);
     setReceiveMethod("platform");
     setContactMethod("");
@@ -378,6 +423,73 @@ export default function PostJobTab({ employerPlan, companyName, editingPost, onP
         </fieldset>
 
         <fieldset style={sectionStyle}>
+          <h3 style={h3Style}>❓ أسئلة فرز للمتقدمين (اختياري)</h3>
+          <p style={{ fontSize: 13, color: "#4A5568", marginBottom: 12 }}>
+            المتقدم هيجاوب على الأسئلة دي وقت التقديم، وهتظهر إجاباته لك جنب باقي بياناته.
+          </p>
+
+          {screeningQuestions.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
+              {screeningQuestions.map((q) => (
+                <div
+                  key={q.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    border: "1px solid #ddd",
+                    borderRadius: 8,
+                    padding: "10px 12px",
+                  }}
+                >
+                  <span style={{ fontSize: 13.5 }}>{q.text}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12.5 }}>
+                      <input
+                        type="checkbox"
+                        checked={q.required}
+                        onChange={() => toggleScreeningQuestionRequired(q.id)}
+                      />
+                      إجباري
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => removeScreeningQuestion(q.id)}
+                      style={{ background: "none", border: "none", color: "#B03A14", cursor: "pointer" }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={gridStyle}>
+            <div>
+              <label style={labelStyle}>اختر سؤال</label>
+              <select value={newQuestionSelect} onChange={(e) => setNewQuestionSelect(e.target.value)} style={inputStyle}>
+                <option value="">اختر من القائمة</option>
+                {availableQuestionOptions.map((q) => (
+                  <option key={q.text} value={q.text}>{q.text}</option>
+                ))}
+                <option value="other">أخرى (اكتب سؤالك)</option>
+              </select>
+            </div>
+            {newQuestionSelect === "other" && (
+              <div>
+                <label style={labelStyle}>اكتب السؤال</label>
+                <input type="text" value={newQuestionOther} onChange={(e) => setNewQuestionOther(e.target.value)} style={inputStyle} />
+              </div>
+            )}
+          </div>
+          <button type="button" onClick={addScreeningQuestion} style={{ ...ghostBtnStyle, marginTop: 12 }}>
+            + إضافة السؤال
+          </button>
+        </fieldset>
+
+        <fieldset style={sectionStyle}>
           <h3 style={h3Style}>⏰ ساعات العمل والمزايا (اختياري)</h3>
           <div style={gridStyle}>
             <div>
@@ -488,3 +600,4 @@ const h3Style: React.CSSProperties = { marginBottom: 12, fontSize: 16 };
 const gridStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 };
 const labelStyle: React.CSSProperties = { display: "block", marginBottom: 4, fontSize: 13.5, fontWeight: 600 };
 const inputStyle: React.CSSProperties = { width: "100%", padding: 8, border: "1px solid #ccc", borderRadius: 6, fontSize: 14 };
+const ghostBtnStyle: React.CSSProperties = { padding: "8px 16px", background: "transparent", border: "1px solid #14213D", borderRadius: 6, cursor: "pointer" };

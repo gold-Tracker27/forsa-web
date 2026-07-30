@@ -6,18 +6,21 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { buildSeekerSnapshot } from "@/lib/seekerSnapshot";
+import ScreeningQuestionsModal, { ScreeningQuestion } from "@/components/ScreeningQuestionsModal";
 
 type Props = {
   jobId: string;
   employerId: string;
+  screeningQuestions?: ScreeningQuestion[];
 };
 
-export default function ApplyButton({ jobId, employerId }: Props) {
+export default function ApplyButton({ jobId, employerId, screeningQuestions = [] }: Props) {
   const router = useRouter();
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [applied, setApplied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [showQuestionsModal, setShowQuestionsModal] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -35,7 +38,7 @@ export default function ApplyButton({ jobId, employerId }: Props) {
     return () => unsubscribe();
   }, [jobId]);
 
-  async function handleApply() {
+  async function handleApply(answers: Record<string, string> = {}) {
     const user = auth.currentUser;
     if (!user) return;
     setBusy(true);
@@ -48,13 +51,23 @@ export default function ApplyButton({ jobId, employerId }: Props) {
         employerId,
         seekerId: user.uid,
         seekerSnapshot: buildSeekerSnapshot(s),
+        screeningAnswers: answers,
         appliedAt: serverTimestamp(),
       });
       setApplied(true);
+      setShowQuestionsModal(false);
     } catch (err) {
       console.error("Apply failed", err);
     }
     setBusy(false);
+  }
+
+  function handleApplyClick() {
+    if (screeningQuestions.length > 0) {
+      setShowQuestionsModal(true);
+    } else {
+      handleApply();
+    }
   }
 
   async function handleCancel() {
@@ -88,21 +101,34 @@ export default function ApplyButton({ jobId, employerId }: Props) {
     );
   }
 
-  return applied ? (
-    <button
-      onClick={handleCancel}
-      disabled={busy}
-      style={{ padding: "12px 24px", border: "1px solid #B03A14", color: "#B03A14", background: "transparent", borderRadius: 8, cursor: "pointer" }}
-    >
-      ✕ إلغاء التقديم
-    </button>
-  ) : (
-    <button
-      onClick={handleApply}
-      disabled={busy}
-      style={{ padding: "12px 24px", background: "#14213D", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}
-    >
-      📩 قدم الآن
-    </button>
+  return (
+    <>
+      {applied ? (
+        <button
+          onClick={handleCancel}
+          disabled={busy}
+          style={{ padding: "12px 24px", border: "1px solid #B03A14", color: "#B03A14", background: "transparent", borderRadius: 8, cursor: "pointer" }}
+        >
+          ✕ إلغاء التقديم
+        </button>
+      ) : (
+        <button
+          onClick={handleApplyClick}
+          disabled={busy}
+          style={{ padding: "12px 24px", background: "#14213D", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}
+        >
+          📩 قدم الآن
+        </button>
+      )}
+
+      {showQuestionsModal && (
+        <ScreeningQuestionsModal
+          questions={screeningQuestions}
+          submitting={busy}
+          onCancel={() => setShowQuestionsModal(false)}
+          onSubmit={(answers) => handleApply(answers)}
+        />
+      )}
+    </>
   );
 }

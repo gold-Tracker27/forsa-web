@@ -107,7 +107,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           <strong>التواصل ({({ email: "إيميل", whatsapp: "واتساب", phone: "تليفون" } as Record<string,string>)[job.contactMethod] || job.contactMethod}):</strong> {job.contactValue}
         </p>
       ) : (
-        <ApplyButton jobId={job.id} employerId={job.employerId} />
+        <ApplyButton jobId={job.id} employerId={job.employerId} screeningQuestions={job.screeningQuestions || []} />
       )}
 
       <RelatedJobs jobId={job.id} specialization={job.specialization} governorate={job.governorate} />

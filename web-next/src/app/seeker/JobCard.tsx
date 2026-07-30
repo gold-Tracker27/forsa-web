@@ -2,6 +2,7 @@
 
 import ShareButton from "@/components/ShareButton";
 import { EXPERIENCE_LEVELS } from "@/lib/constants";
+import { ScreeningQuestion } from "@/components/ScreeningQuestionsModal";
 
 export type JobPost = {
   id: string;
@@ -11,6 +12,7 @@ export type JobPost = {
   governorate: string;
   jobType: string;
   jobLevel?: string;
+  screeningQuestions?: ScreeningQuestion[];
   companyName?: string;
   showCompanyName?: boolean;
   description?: string;

@@ -72,6 +72,18 @@ export const LANGUAGE_LEVELS: Record<string, string> = {
   fluent: "إجادة تامة",
 };
 
+export const SCREENING_QUESTION_OPTIONS: { text: string; type: "text" | "number" }[] = [
+  { text: "المرتب المتوقع؟", type: "number" },
+  { text: "هل لديك خبرة سابقة في المجال؟ وكام سنة؟", type: "text" },
+  { text: "ما هو المؤهل الدراسي؟", type: "text" },
+  { text: "هل تسكن بالقرب من موقع العمل، أم محتاج سكن/مواصلات؟", type: "text" },
+  { text: "هل تمتلك وسيلة مواصلات خاصة؟", type: "text" },
+  { text: "متى يمكنك بدء العمل؟", type: "text" },
+  { text: "هل تمتلك رخصة قيادة سارية؟", type: "text" },
+  { text: "هل يمكنك العمل بنظام الورديات أو في الإجازات؟", type: "text" },
+  { text: "ما هي برامج الكمبيوتر التي تجيدها؟", type: "text" },
+];
+
 export const SPECIALIZATION_OPTIONS = [
   'محاسبة', 'مبيعات', 'تسويق', 'خدمة عملاء', 'موارد بشرية',
   'سكرتارية وإدارة مكتبية', 'استقبال', 'تكنولوجيا المعلومات وبرمجة',
