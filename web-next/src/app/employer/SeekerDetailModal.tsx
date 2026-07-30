@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MILITARY_STATUS_LABELS, SKILL_LEVELS, LANGUAGE_LEVELS, EXPERIENCE_LEVELS } from "@/lib/constants";
 import { normalizeEntries, formatEntries } from "@/lib/profileFields";
 import UpgradeModal from "./UpgradeModal";
+import InviteToJobModal from "./InviteToJobModal";
 
 const EDUCATION_LABELS: Record<string, string> = {
   none: "بدون مؤهل دراسي",
@@ -32,6 +33,7 @@ type Props = {
 
 export default function SeekerDetailModal({ seeker: s, employerPlan, onClose }: Props) {
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
   const isPremium = employerPlan === "premium";
 
   const skills = normalizeEntries(s.skills);
@@ -149,6 +151,12 @@ export default function SeekerDetailModal({ seeker: s, employerPlan, onClose }: 
                   📄 السيرة الذاتية
                 </a>
               )}
+              <button
+                onClick={() => setShowInvite(true)}
+                style={{ display: "block", marginTop: 14, padding: "8px 16px", background: "#14213D", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13.5 }}
+              >
+                ✉️ ادعُه للتقديم على وظيفة
+              </button>
             </div>
           ) : (
             <div style={{ background: "#F5EFDE", padding: 16, borderRadius: 8 }}>
@@ -167,6 +175,14 @@ export default function SeekerDetailModal({ seeker: s, employerPlan, onClose }: 
       </div>
 
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+      {showInvite && (
+        <InviteToJobModal
+          seekerId={s.id}
+          seekerName={s.fullName || ""}
+          employerPlan={employerPlan}
+          onClose={() => setShowInvite(false)}
+        />
+      )}
     </>
   );
 }

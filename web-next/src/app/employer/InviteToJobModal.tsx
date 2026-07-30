@@ -1,0 +1,189 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { collection, doc, getDocs, query, serverTimestamp, setDoc, where } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+
+type Props = {
+  seekerId: string;
+  seekerName: string;
+  employerPlan: string;
+  onClose: () => void;
+};
+
+export default function InviteToJobModal({ seekerId, seekerName, employerPlan, onClose }: Props) {
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedJobId, setSelectedJobId] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    async function loadJobs() {
+      const user = auth.currentUser;
+      if (!user) return;
+      const snap = await getDocs(
+        query(collection(db, "job_posts"), where("employerId", "==", user.uid), where("isActive", "==", true))
+      );
+      setJobs(snap.docs.map((d) => ({ id: d.id, ...d.data() } as any)));
+      setLoading(false);
+    }
+    loadJobs();
+  }, []);
+
+  async function handleSendInvite() {
+    const user = auth.currentUser;
+    if (!user || !selectedJobId) return;
+    setError("");
+    setSending(true);
+    try {
+      // حد الدعوات الشهري — نفس نمط حد نشر الوظائف الشهري في PostJobTab.tsx
+      const monthlyLimit = employerPlan === "premium" ? 30 : 5;
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const invitesSnap = await getDocs(query(collection(db, "invitations"), where("employerId", "==", user.uid)));
+      const invitesThisMonth = invitesSnap.docs.filter((d) => {
+        const t = d.data().createdAt;
+        return t && t.toMillis() >= startOfMonth.getTime();
+      });
+      if (invitesThisMonth.length >= monthlyLimit) {
+        setError(
+          employerPlan === "premium"
+            ? `وصلت للحد الأقصى (${monthlyLimit} دعوة) للباقة المدفوعة الشهر ده.`
+            : `الباقة المجانية بتسمح بحد أقصى ${monthlyLimit} دعوات شهريًا، وإنت وصلت للحد ده الشهر ده.`
+        );
+        setSending(false);
+        return;
+      }
+
+      const job = jobs.find((j) => j.id === selectedJobId);
+      if (!job) {
+        setError("اختار وظيفة الأول.");
+        setSending(false);
+        return;
+      }
+
+      await setDoc(doc(db, "invitations", `${selectedJobId}_${seekerId}`), {
+        employerId: user.uid,
+        employerCompanyName: job.companyName || "",
+        seekerId,
+        jobPostId: selectedJobId,
+        jobTitle: job.title || "",
+        createdAt: serverTimestamp(),
+      });
+
+      setSent(true);
+    } catch (err) {
+      console.error("Send invite failed", err);
+      setError("حصلت مشكلة — جرب تاني.");
+    }
+    setSending(false);
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(20,33,61,0.55)",
+        zIndex: 200,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+      }}
+    >
+      <div
+        dir="rtl"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#fff",
+          borderRadius: 12,
+          padding: 24,
+          maxWidth: 440,
+          width: "100%",
+          maxHeight: "85vh",
+          overflowY: "auto",
+          position: "relative",
+        }}
+      >
+        <button
+          onClick={onClose}
+          style={{
+            position: "absolute",
+            top: 14,
+            left: 14,
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            border: "1.5px solid #ccc",
+            background: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          ✕
+        </button>
+
+        <h2 style={{ marginBottom: 6, fontSize: 19 }}>ادعُ {seekerName || "الباحث"} للتقديم</h2>
+
+        {sent ? (
+          <p style={{ color: "#2F6F4E", fontSize: 14 }}>✓ اتبعتت الدعوة بنجاح.</p>
+        ) : (
+          <>
+            <p style={{ color: "#4A5568", fontSize: 13.5, marginBottom: 16 }}>
+              اختار وظيفة من إعلاناتك النشطة، وهنبعتله إيميل يدعوه للتقديم عليها.
+            </p>
+
+            {loading && <p>جاري التحميل...</p>}
+
+            {!loading && jobs.length === 0 && (
+              <div style={{ padding: 16, textAlign: "center", color: "#4A5568" }}>
+                مفيش إعلانات نشطة عندك دلوقتي.
+              </div>
+            )}
+
+            {!loading && jobs.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", marginBottom: 4, fontSize: 13.5, fontWeight: 600 }}>الوظيفة</label>
+                <select
+                  value={selectedJobId}
+                  onChange={(e) => setSelectedJobId(e.target.value)}
+                  style={{ width: "100%", padding: 8, border: "1px solid #ccc", borderRadius: 6, fontSize: 14 }}
+                >
+                  <option value="">اختر وظيفة</option>
+                  {jobs.map((j) => (
+                    <option key={j.id} value={j.id}>{j.title}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {error && <div style={{ color: "#B03A14", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+
+            <button
+              onClick={handleSendInvite}
+              disabled={sending || !selectedJobId}
+              style={{
+                width: "100%",
+                padding: "12px",
+                background: "#14213D",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                fontWeight: 700,
+                cursor: sending || !selectedJobId ? "not-allowed" : "pointer",
+                opacity: sending || !selectedJobId ? 0.6 : 1,
+              }}
+            >
+              {sending ? "جاري الإرسال..." : "إرسال الدعوة"}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
