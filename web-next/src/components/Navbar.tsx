@@ -68,6 +68,7 @@ export default function Navbar() {
             <Link href="/employer" style={linkStyle}>🏢 لوحة صاحب العمل</Link>
           </>
         )}
+        <Link href="/companies" style={linkStyle}>🏛️ الشركات</Link>
         {isAdmin && <Link href="/admin" style={linkStyle}>📊 لوحة الإدارة</Link>}
       </div>
 

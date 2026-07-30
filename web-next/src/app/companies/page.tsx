@@ -1,0 +1,121 @@
+import Link from "next/link";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
+export const metadata = {
+  title: "الشركات - منصة الشغل",
+  description: "تصفح الشركات اللي بتوظف حاليًا على منصة الشغل، وشوف كل وظائفها المفتوحة في مكان واحد.",
+};
+
+type CompanyCard = {
+  employerId: string;
+  companyName: string;
+  count: number;
+  logoURL?: string | null;
+};
+
+async function getCompanies(): Promise<CompanyCard[]> {
+  const q = query(
+    collection(db, "job_posts"),
+    where("isActive", "==", true),
+    where("showCompanyName", "==", true)
+  );
+  const snap = await getDocs(q);
+  const now = Date.now();
+  const activeJobs = snap.docs
+    .map((d) => ({ id: d.id, ...d.data() } as any))
+    .filter((p) => !p.expiresAt || p.expiresAt.toMillis() > now);
+
+  const byEmployer = new Map<string, CompanyCard>();
+  for (const job of activeJobs) {
+    const existing = byEmployer.get(job.employerId);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      byEmployer.set(job.employerId, {
+        employerId: job.employerId,
+        companyName: job.companyName || "شركة",
+        count: 1,
+      });
+    }
+  }
+
+  const companies = Array.from(byEmployer.values());
+
+  const withLogos = await Promise.all(
+    companies.map(async (c) => {
+      try {
+        const empSnap = await getDoc(doc(db, "employers", c.employerId));
+        return { ...c, logoURL: empSnap.exists() ? (empSnap.data() as any).logoURL : null };
+      } catch (err) {
+        console.error(`Failed to load employer ${c.employerId}`, err);
+        return { ...c, logoURL: null };
+      }
+    })
+  );
+
+  return withLogos.sort((a, b) => b.count - a.count);
+}
+
+export default async function CompaniesPage() {
+  const companies = await getCompanies();
+
+  return (
+    <div dir="rtl" style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px" }}>
+      <h1 style={{ fontSize: 26, marginBottom: 6 }}>الشركات</h1>
+      <p style={{ color: "#4A5568", marginBottom: 24 }}>
+        {companies.length} شركة بتوظف حاليًا على منصة الشغل
+      </p>
+
+      {companies.length === 0 && (
+        <div style={{ padding: 30, textAlign: "center", color: "#4A5568" }}>
+          مفيش شركات ظاهرة حاليًا — تابعنا قريبًا.
+        </div>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+        {companies.map((c) => (
+          <Link
+            key={c.employerId}
+            href={`/companies/${c.employerId}`}
+            style={{
+              display: "block",
+              border: "1px solid #14213D22",
+              borderRadius: 10,
+              padding: 16,
+              textDecoration: "none",
+              color: "inherit",
+              textAlign: "center",
+            }}
+          >
+            {c.logoURL ? (
+              <img
+                src={c.logoURL}
+                alt={c.companyName}
+                style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 10, margin: "0 auto 10px" }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 10,
+                  background: "#F0EDE3",
+                  margin: "0 auto 10px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 22,
+                }}
+              >
+                🏢
+              </div>
+            )}
+            <h4 style={{ margin: "0 0 6px", fontSize: 15 }}>{c.companyName}</h4>
+            <div style={{ fontSize: 12.5, color: "#4A5568" }}>{c.count} وظيفة مفتوحة</div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}

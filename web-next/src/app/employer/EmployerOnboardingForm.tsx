@@ -58,10 +58,9 @@ export default function EmployerOnboardingForm({ initialData, onSaved }: Props) 
 
     const finalCity = citySelect === "other" ? cityOther.trim() : citySelect;
 
+    // بيانات الشركة العامة (قراءة عامة من صفحات الشركات) — من غير بيانات تواصل شخصية
     const data: any = {
       companyName,
-      contactPerson,
-      phone,
       industry,
       governorate,
       city: finalCity,
@@ -93,6 +92,13 @@ export default function EmployerOnboardingForm({ initialData, onSaved }: Props) 
     }
 
     await setDoc(doc(db, "employers", user.uid), data, { merge: true });
+
+    // بيانات التواصل الشخصية — مستند فرعي محمي، يقراه صاحب الحساب بس
+    await setDoc(
+      doc(db, "employers", user.uid, "private", "contact"),
+      { contactPerson, phone },
+      { merge: true }
+    );
 
     setSaving(false);
     onSaved();

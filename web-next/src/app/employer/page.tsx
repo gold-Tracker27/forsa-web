@@ -29,7 +29,8 @@ export default function EmployerPage() {
     const snap = await getDoc(ref);
 
     if (snap.exists()) {
-      setCompanyData(snap.data());
+      const contactSnap = await getDoc(doc(db, "employers", user.uid, "private", "contact"));
+      setCompanyData({ ...snap.data(), ...(contactSnap.exists() ? contactSnap.data() : {}) });
       setStatus("has-profile");
     } else {
       setStatus("no-profile");
