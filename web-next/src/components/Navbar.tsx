@@ -24,7 +24,7 @@ export default function Navbar() {
         setLoading(false);
         return;
       }
-      setUserLabel(user.displayName || user.email || "");
+      setUserLabel(user.displayName || user.email || user.phoneNumber || "");
       setIsAdmin(ADMIN_EMAILS.includes(user.email || ""));
 
       const userDoc = await getDoc(doc(db, "users", user.uid));
