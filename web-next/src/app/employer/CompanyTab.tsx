@@ -87,6 +87,8 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
   const [applicantCounts, setApplicantCounts] = useState<Record<string, number>>({});
   const [openApplicantsFor, setOpenApplicantsFor] = useState<string | null>(null);
   const [applicants, setApplicants] = useState<any[]>([]);
+  const [loadingApplicants, setLoadingApplicants] = useState(false);
+  const [applicantsError, setApplicantsError] = useState("");
   const [detailPost, setDetailPost] = useState<JobPost | null>(null);
 
   async function loadMyJobPosts() {
@@ -94,27 +96,35 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
     if (!user) return;
     setLoading(true);
 
-    const snap = await getDocs(query(collection(db, "job_posts"), where("employerId", "==", user.uid)));
-    const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as JobPost));
-    list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    try {
+      const snap = await getDocs(query(collection(db, "job_posts"), where("employerId", "==", user.uid)));
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as JobPost));
+      list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
-    const now = Date.now();
-    for (const p of list) {
-      if (p.isActive !== false && p.expiresAt && p.expiresAt.toMillis() < now) {
-        p.isActive = false;
-        updateDoc(doc(db, "job_posts", p.id), { isActive: false }).catch(() => {});
+      const now = Date.now();
+      for (const p of list) {
+        if (p.isActive !== false && p.expiresAt && p.expiresAt.toMillis() < now) {
+          p.isActive = false;
+          updateDoc(doc(db, "job_posts", p.id), { isActive: false }).catch(() => {});
+        }
       }
+
+      setPosts(list);
+    } catch (err) {
+      console.error("[loadMyJobPosts] فشل استعلام job_posts", err);
     }
 
-    setPosts(list);
-
-    const appsSnap = await getDocs(query(collection(db, "applications"), where("employerId", "==", user.uid)));
-    const counts: Record<string, number> = {};
-    appsSnap.docs.forEach((d) => {
-      const jid = d.data().jobPostId;
-      counts[jid] = (counts[jid] || 0) + 1;
-    });
-    setApplicantCounts(counts);
+    try {
+      const appsSnap = await getDocs(query(collection(db, "applications"), where("employerId", "==", user.uid)));
+      const counts: Record<string, number> = {};
+      appsSnap.docs.forEach((d) => {
+        const jid = d.data().jobPostId;
+        counts[jid] = (counts[jid] || 0) + 1;
+      });
+      setApplicantCounts(counts);
+    } catch (err) {
+      console.error("[loadMyJobPosts] فشل استعلام applicantCounts (applications)", err);
+    }
 
     setLoading(false);
   }
@@ -136,16 +146,30 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
   }
 
   async function toggleApplicants(postId: string) {
+    const user = auth.currentUser;
+    if (!user) return;
     if (openApplicantsFor === postId) {
       setOpenApplicantsFor(null);
       return;
     }
     setOpenApplicantsFor(postId);
-    setApplicants(await fetchApplicants(postId));
+    setApplicants([]);
+    setApplicantsError("");
+    setLoadingApplicants(true);
+    try {
+      setApplicants(await fetchApplicants(postId, user.uid));
+    } catch (err) {
+      console.error("Fetch applicants failed", err);
+      setApplicantsError("حصل خطأ أثناء تحميل المتقدمين، حاول مرة أخرى.");
+    } finally {
+      setLoadingApplicants(false);
+    }
   }
 
   function exportCSV(postId: string, jobTitle: string) {
-    exportApplicantsCSV(postId, jobTitle);
+    const user = auth.currentUser;
+    if (!user) return;
+    exportApplicantsCSV(postId, jobTitle, user.uid);
   }
 
   if (editing) {
@@ -245,7 +269,11 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
 
               {openApplicantsFor === p.id && (
                 <div style={{ marginTop: 12 }}>
-                  {applicants.length === 0 ? (
+                  {loadingApplicants ? (
+                    <div style={{ padding: 12, color: "#4A5568" }}>جاري التحميل...</div>
+                  ) : applicantsError ? (
+                    <div style={{ padding: 12, color: "#B03A14" }}>{applicantsError}</div>
+                  ) : applicants.length === 0 ? (
                     <div style={{ padding: 12, color: "#4A5568" }}>لسه محدش قدّم على الإعلان ده.</div>
                   ) : (
                     applicants.map((a, i) => {

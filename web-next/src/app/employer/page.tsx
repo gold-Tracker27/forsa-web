@@ -25,15 +25,28 @@ export default function EmployerPage() {
   async function loadCompany() {
     const user = auth.currentUser;
     if (!user) return;
-    const ref = doc(db, "employers", user.uid);
-    const snap = await getDoc(ref);
 
-    if (snap.exists()) {
-      const contactSnap = await getDoc(doc(db, "employers", user.uid, "private", "contact"));
-      setCompanyData({ ...snap.data(), ...(contactSnap.exists() ? contactSnap.data() : {}) });
+    try {
+      const ref = doc(db, "employers", user.uid);
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()) {
+        setStatus("no-profile");
+        return;
+      }
+
+      let contactData = {};
+      try {
+        const contactSnap = await getDoc(doc(db, "employers", user.uid, "private", "contact"));
+        contactData = contactSnap.exists() ? contactSnap.data() : {};
+      } catch (err) {
+        console.error("[loadCompany] فشل قراءة employers/{uid}/private/contact", err);
+      }
+
+      setCompanyData({ ...snap.data(), ...contactData });
       setStatus("has-profile");
-    } else {
-      setStatus("no-profile");
+    } catch (err) {
+      console.error("[loadCompany] فشل قراءة employers/{uid}", err);
     }
   }
 

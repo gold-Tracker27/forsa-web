@@ -9,15 +9,21 @@ export async function deleteJobPost(postId: string): Promise<void> {
   await deleteDoc(doc(db, "job_posts", postId));
 }
 
-export async function fetchApplicants(postId: string): Promise<any[]> {
-  const snap = await getDocs(query(collection(db, "applications"), where("jobPostId", "==", postId)));
+export async function fetchApplicants(postId: string, employerId: string): Promise<any[]> {
+  const snap = await getDocs(
+    query(
+      collection(db, "applications"),
+      where("jobPostId", "==", postId),
+      where("employerId", "==", employerId)
+    )
+  );
   return snap.docs.map((d) => d.data());
 }
 
 const CSV_BOM = String.fromCharCode(0xfeff);
 
-export async function exportApplicantsCSV(postId: string, jobTitle: string): Promise<void> {
-  const applicants = await fetchApplicants(postId);
+export async function exportApplicantsCSV(postId: string, jobTitle: string, employerId: string): Promise<void> {
+  const applicants = await fetchApplicants(postId, employerId);
   if (applicants.length === 0) {
     alert("لسه مفيش متقدمين على الإعلان ده.");
     return;

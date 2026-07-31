@@ -108,13 +108,13 @@ export default function AdminPage() {
     loadStats();
   }
 
-  async function handleToggleApplicants(postId: string) {
+  async function handleToggleApplicants(postId: string, employerId: string) {
     if (openApplicantsFor === postId) {
       setOpenApplicantsFor(null);
       return;
     }
     setOpenApplicantsFor(postId);
-    setApplicants(await fetchApplicants(postId));
+    setApplicants(await fetchApplicants(postId, employerId));
   }
 
   if (status === "loading") {
@@ -214,11 +214,11 @@ export default function AdminPage() {
             </div>
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button onClick={() => handleToggleApplicants(p.id)} style={smallBtnStyle}>
+              <button onClick={() => handleToggleApplicants(p.id, p.employerId)} style={smallBtnStyle}>
                 👥 عرض المتقدمين ({p.applicantCount})
               </button>
               {p.applicantCount > 0 && (
-                <button onClick={() => exportApplicantsCSV(p.id, p.title)} style={smallBtnStyle}>⬇ تحميل Excel</button>
+                <button onClick={() => exportApplicantsCSV(p.id, p.title, p.employerId)} style={smallBtnStyle}>⬇ تحميل Excel</button>
               )}
             </div>
 
