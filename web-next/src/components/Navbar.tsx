@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -11,6 +11,7 @@ const ADMIN_EMAILS = ["elshoghl27@gmail.com", "mohamedzakaria2727@gmail.com"];
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [userType, setUserType] = useState<"job_seeker" | "employer" | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userLabel, setUserLabel] = useState("");
@@ -58,6 +59,16 @@ export default function Navbar() {
 
   const isPremium = employerPlan === "premium";
 
+  // الهيدر لازم يعكس الصفحة اللي المستخدم واقف فيها دلوقتي، مش آخر دور سجّل بيه دخول —
+  // لأن نفس الحساب ممكن يكون عنده بروفايل صاحب عمل وبروفايل باحث عن شغل في نفس الوقت
+  // /companies صفحة محايدة: بتقبل عناصر الطرفين (صاحب عمل وباحث) حسب مين الداخل
+  const isSeekerContext = pathname.startsWith("/seeker");
+  const isEmployerContext = pathname.startsWith("/employer") || pathname.startsWith("/admin");
+
+  const showSeekerItems = userType === "job_seeker" && !isEmployerContext;
+  const showEmployerItems = userType === "employer" && !isSeekerContext;
+  const showAdminLink = isAdmin && !isSeekerContext;
+
   return (
     <nav
       dir="rtl"
@@ -73,15 +84,19 @@ export default function Navbar() {
       }}
     >
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        {userType === "job_seeker" && (
-          <Link href="/seeker" style={linkStyle}>🏠 تصفح الوظائف</Link>
+        {showSeekerItems && (
+          <>
+            <Link href="/seeker?tab=jobs" style={linkStyle}>🏠 تصفح الوظائف</Link>
+            <Link href="/seeker?tab=saved" style={linkStyle}>🔖 الوظائف المحفوظة</Link>
+            <Link href="/seeker?tab=profile" style={linkStyle}>👤 بروفايلي</Link>
+          </>
         )}
-        {userType === "employer" && (
+        {showEmployerItems && (
           <span style={isPremium ? premiumBadgeStyle : freeBadgeStyle}>
             {isPremium ? "⭐ الباقة المدفوعة" : "الباقة المجانية"}
           </span>
         )}
-        {userType === "employer" && (
+        {showEmployerItems && (
           <>
             <Link href="/employer?tab=company" style={linkStyle}>🏠 بيانات الشركة</Link>
             <Link href="/employer?tab=postjob" style={linkStyle}>📝 نشر وظيفة جديدة</Link>
@@ -89,7 +104,7 @@ export default function Navbar() {
           </>
         )}
         <Link href="/companies" style={linkStyle}>🏛️ الشركات</Link>
-        {isAdmin && <Link href="/admin" style={linkStyle}>📊 لوحة الإدارة</Link>}
+        {showAdminLink && <Link href="/admin" style={linkStyle}>📊 لوحة الإدارة</Link>}
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -100,7 +115,7 @@ export default function Navbar() {
   );
 }
 
-const linkStyle: React.CSSProperties = {
+export const linkStyle: React.CSSProperties = {
   padding: "6px 14px",
   borderRadius: 6,
   textDecoration: "none",
