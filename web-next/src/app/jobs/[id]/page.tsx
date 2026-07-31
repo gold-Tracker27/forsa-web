@@ -5,13 +5,7 @@ import ApplyButton from "./ApplyButton";
 import ShareButton from "@/components/ShareButton";
 import RelatedJobs from "./RelatedJobs";
 import { EXPERIENCE_LEVELS } from "@/lib/constants";
-
-const JOB_TYPE_LABELS: Record<string, string> = {
-  full_time: "دوام كامل",
-  part_time: "دوام جزئي",
-  remote: "عن بعد",
-  freelance: "فريلانس",
-};
+import { tagStyle, featuredPillStyle, JOB_TYPE_LABELS } from "@/lib/jobCardStyles";
 
 async function getJob(id: string): Promise<any> {
   const snap = await getDoc(doc(db, "job_posts", id));
@@ -67,7 +61,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         <span style={tagStyle}>{job.city} - {job.governorate}</span>
         <span style={tagStyle}>{JOB_TYPE_LABELS[job.jobType] || job.jobType}</span>
         {job.jobLevel && <span style={tagStyle}>{EXPERIENCE_LEVELS[job.jobLevel] || job.jobLevel}</span>}
-        {job.featured && <span style={tagStyle}>⭐ مميز</span>}
+        {job.featured && <span style={featuredPillStyle}>⭐ مميز</span>}
         <ShareButton jobId={job.id} title={job.title} />
       </div>
 
@@ -124,5 +118,3 @@ function DetailRow({ label, value }: { label: string; value?: string }) {
     </div>
   );
 }
-
-const tagStyle: React.CSSProperties = { fontSize: 12, background: "#F0EDE3", padding: "3px 10px", borderRadius: 999 };

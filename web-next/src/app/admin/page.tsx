@@ -7,19 +7,25 @@ import { auth, db } from "@/lib/firebase";
 import ShareButton from "@/components/ShareButton";
 import PostJobTab from "../employer/PostJobTab";
 import { toggleJobActive, deleteJobPost, fetchApplicants, exportApplicantsCSV } from "@/lib/jobPostActions";
-import { EXPERIENCE_LEVELS, MILITARY_STATUS_LABELS, SKILL_LEVELS, LANGUAGE_LEVELS } from "@/lib/constants";
-import { normalizeEntries, formatEntries } from "@/lib/profileFields";
+import { EXPERIENCE_LEVELS } from "@/lib/constants";
+import ApplicantCard from "@/components/ApplicantCard";
+import {
+  jobCardContainerStyle,
+  tagStyle,
+  activePillStyle,
+  pausedPillStyle,
+  featuredPillStyle,
+  applicantBadgeStyle,
+  primaryActionStyle,
+  ghostActionStyle,
+  toolBtnStyle,
+  dangerToolBtnStyle,
+  JOB_TYPE_LABELS,
+} from "@/lib/jobCardStyles";
 
 const ADMIN_EMAILS = ["elshoghl27@gmail.com", "mohamedzakaria2727@gmail.com"];
 
 type EditingPost = { id: string; data: any } | null;
-
-const JOB_TYPE_LABELS: Record<string, string> = {
-  full_time: "دوام كامل",
-  part_time: "دوام جزئي",
-  remote: "عن بعد",
-  freelance: "فريلانس",
-};
 
 function formatDate(ts: any) {
   if (!ts) return "";
@@ -175,117 +181,89 @@ export default function AdminPage() {
 
       {posts.length === 0 && <div style={{ color: "#4A5568" }}>مفيش إعلانات لسه.</div>}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {posts.map((p) => (
-          <div key={p.id} style={{ border: "1px solid #14213D22", borderRadius: 10, padding: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-              <div style={{ fontSize: 12, color: "#4A5568" }}>
-                {formatDate(p.createdAt)} · {p.isActive === false ? "متوقف" : "نشط"}
-                {p.featured ? " · ⭐ مميز" : ""}
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {posts.map((p) => {
+          const isPaused = p.isActive === false;
+          return (
+          <div key={p.id} style={jobCardContainerStyle}>
+            <div style={{ padding: "18px 20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: 240 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                    <span style={isPaused ? pausedPillStyle : activePillStyle}>{isPaused ? "⏸ متوقف" : "● نشط"}</span>
+                    {p.featured && <span style={featuredPillStyle}>⭐ مميز</span>}
+                  </div>
+                  <h3 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 800, color: "#14213D" }}>{p.title}</h3>
+                  <div style={{ fontSize: 13, color: "#4A5568", marginBottom: 10 }}>
+                    {p.companyName || "بدون اسم شركة"}
+                    {!p.showCompanyName ? " (مخفي عن الباحثين)" : ""}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", fontSize: 13, color: "#4A5568" }}>
+                    <span>📍 {p.city} - {p.governorate}</span>
+                    <span aria-hidden>·</span>
+                    <span>🕐 {JOB_TYPE_LABELS[p.jobType] || p.jobType}</span>
+                    {p.jobLevel && (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span>🎯 {EXPERIENCE_LEVELS[p.jobLevel] || p.jobLevel}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                  <span style={applicantBadgeStyle}>👥 {p.applicantCount} متقدم</span>
+                  <span style={{ fontSize: 12, color: "#4A5568", whiteSpace: "nowrap" }}>{formatDate(p.createdAt)}</span>
+                </div>
               </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button onClick={() => setEditingPost({ id: p.id, data: p })} style={smallBtnStyle}>✎ تعديل</button>
-                <button onClick={() => handleToggleActive(p.id, p.isActive === false)} style={smallBtnStyle}>
-                  {p.isActive === false ? "▶ إعادة تفعيل" : "⏸ إيقاف الإعلان"}
-                </button>
-                <button onClick={() => handleDelete(p.id)} style={smallBtnStyle}>✕ حذف نهائي</button>
-              </div>
-            </div>
-            <h4 style={{ margin: "0 0 6px" }}>{p.title}</h4>
-            <div style={{ fontSize: 13, color: "#4A5568", marginBottom: 8 }}>
-              {p.companyName || "بدون اسم شركة"}
-              {!p.showCompanyName ? " (مخفي عن الباحثين)" : ""}
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-              <span style={tagStyle}>{p.specialization}</span>
-              <span style={tagStyle}>{p.city} - {p.governorate}</span>
-              <span style={tagStyle}>{JOB_TYPE_LABELS[p.jobType] || p.jobType}</span>
-              {p.jobLevel && <span style={tagStyle}>{EXPERIENCE_LEVELS[p.jobLevel] || p.jobLevel}</span>}
-              <span style={{ ...tagStyle, fontWeight: 700 }}>👥 {p.applicantCount} متقدم</span>
-              <ShareButton jobId={p.id} title={p.title} />
-              <a
-                href={`/jobs/${p.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ ...tagStyle, textDecoration: "none", color: "#14213D" }}
-              >
-                🔗 عرض الصفحة العامة
-              </a>
-            </div>
 
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button onClick={() => handleToggleApplicants(p.id, p.employerId)} style={smallBtnStyle}>
-                👥 عرض المتقدمين ({p.applicantCount})
-              </button>
-              {p.applicantCount > 0 && (
-                <button onClick={() => exportApplicantsCSV(p.id, p.title, p.employerId)} style={smallBtnStyle}>⬇ تحميل Excel</button>
-              )}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 10,
+                  marginTop: 16,
+                  paddingTop: 14,
+                  borderTop: "1px solid #14213D14",
+                }}
+              >
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button onClick={() => handleToggleApplicants(p.id, p.employerId)} style={primaryActionStyle}>
+                    👥 عرض المتقدمين ({p.applicantCount})
+                  </button>
+                  {p.applicantCount > 0 && (
+                    <button onClick={() => exportApplicantsCSV(p.id, p.title, p.employerId)} style={ghostActionStyle}>⬇ تحميل Excel</button>
+                  )}
+                  <a href={`/jobs/${p.id}`} target="_blank" rel="noopener noreferrer" style={{ ...ghostActionStyle, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+                    🔗 الصفحة العامة
+                  </a>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <button onClick={() => setEditingPost({ id: p.id, data: p })} style={toolBtnStyle}>✎ تعديل</button>
+                  <button onClick={() => handleToggleActive(p.id, isPaused)} style={toolBtnStyle}>
+                    {isPaused ? "▶ تفعيل" : "⏸ إيقاف"}
+                  </button>
+                  <ShareButton jobId={p.id} title={p.title} />
+                  <button onClick={() => handleDelete(p.id)} style={dangerToolBtnStyle}>✕ حذف</button>
+                </div>
+              </div>
             </div>
 
             {openApplicantsFor === p.id && (
-              <div style={{ marginTop: 12 }}>
+              <div style={{ padding: "16px 20px 18px", borderTop: "1px solid #14213D14", display: "flex", flexDirection: "column", gap: 12 }}>
                 {applicants.length === 0 ? (
                   <div style={{ padding: 12, color: "#4A5568" }}>لسه محدش قدّم على الإعلان ده.</div>
                 ) : (
-                  applicants.map((a, i) => {
-                    const s = a.seekerSnapshot || {};
-                    return (
-                      <div key={i} style={{ background: "#F5EFDE", borderRadius: 8, padding: 12, marginBottom: 8 }}>
-                        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                          {s.photoURL && (
-                            <img src={s.photoURL} alt={s.fullName || "المتقدم"} style={{ width: 44, height: 44, objectFit: "cover", borderRadius: "50%", flexShrink: 0 }} />
-                          )}
-                          <div>
-                            <strong>{s.fullName || "بدون اسم"}</strong> — {s.jobTitle || ""}
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-                          <span style={tagStyle}>{s.specialization || ""}</span>
-                          <span style={tagStyle}>{s.city || ""} - {s.governorate || ""}</span>
-                          <span style={tagStyle}>{s.yearsOfExperience || 0} سنوات خبرة</span>
-                          {(() => {
-                            const skills = normalizeEntries(s.skills);
-                            return skills.length > 0 && (
-                              <span style={tagStyle}>🛠 {formatEntries(skills, SKILL_LEVELS)}</span>
-                            );
-                          })()}
-                          {(() => {
-                            const languages = normalizeEntries(s.languages);
-                            return languages.length > 0 && (
-                              <span style={tagStyle}>🌐 {formatEntries(languages, LANGUAGE_LEVELS)}</span>
-                            );
-                          })()}
-                          {s.militaryStatus && (
-                            <span style={tagStyle}>{MILITARY_STATUS_LABELS[s.militaryStatus] || s.militaryStatus}</span>
-                          )}
-                        </div>
-                        <div style={{ marginTop: 6, fontSize: 13.5 }}>📞 <strong>{s.phone || "—"}</strong></div>
-                        {s.email && <div style={{ marginTop: 4, fontSize: 13.5 }}>✉️ {s.email}</div>}
-                        {s.cvFileURL && (
-                          <a href={s.cvFileURL} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 6, color: "#14213D" }}>
-                            📄 السيرة الذاتية
-                          </a>
-                        )}
-                        {a.screeningAnswers && p.screeningQuestions && p.screeningQuestions.length > 0 && (
-                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #14213D22" }}>
-                            <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 4 }}>إجابات أسئلة الفرز:</div>
-                            {p.screeningQuestions.map((q: any) =>
-                              a.screeningAnswers[q.id] ? (
-                                <div key={q.id} style={{ fontSize: 13, marginTop: 3 }}>
-                                  <strong>{q.text}:</strong> {a.screeningAnswers[q.id]}
-                                </div>
-                              ) : null
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })
+                  applicants.map((a, i) => (
+                    <ApplicantCard key={i} applicant={a} screeningQuestions={p.screeningQuestions} />
+                  ))
                 )}
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {editingPost && (
@@ -355,6 +333,3 @@ function StatCard({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
-
-const tagStyle: React.CSSProperties = { fontSize: 12, background: "#F0EDE3", padding: "3px 10px", borderRadius: 999 };
-const smallBtnStyle: React.CSSProperties = { padding: "6px 12px", fontSize: 13, border: "1px solid #14213D", background: "transparent", borderRadius: 6, cursor: "pointer" };

@@ -20,7 +20,8 @@ import { auth, db } from "@/lib/firebase";
 import { GOVERNORATES, SPECIALIZATION_OPTIONS, EXPERIENCE_LEVELS } from "@/lib/constants";
 import { buildSeekerSnapshot } from "@/lib/seekerSnapshot";
 import { fetchSavedJobIds, setJobSaved } from "@/lib/savedJobs";
-import JobCard, { JobPost, salaryTeaser, tagStyle } from "./JobCard";
+import JobCard, { JobPost, salaryTeaser } from "./JobCard";
+import { tagStyle } from "@/lib/jobCardStyles";
 import ScreeningQuestionsModal from "@/components/ScreeningQuestionsModal";
 
 const PAGE_SIZE = 12;

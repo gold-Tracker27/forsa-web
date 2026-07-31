@@ -86,59 +86,55 @@ export default function EmployerPage() {
       <div
         style={{
           display: "flex",
-          gap: 10,
           alignItems: "center",
-          justifyContent: "center",
-          padding: "16px 20px 0",
-        }}
-      >
-        <span style={isPremium ? premiumBadgeStyle : freeBadgeStyle}>
-          {isPremium ? "⭐ الباقة المدفوعة" : "الباقة المجانية"}
-        </span>
-        {!isPremium && (
-          <button onClick={() => setUpgradeModalOpen(true)} style={upgradeBtnStyle}>
-            🚀 طلب الترقية للباقة المدفوعة
-          </button>
-        )}
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          gap: 8,
-          justifyContent: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
           padding: "16px 20px",
           borderBottom: "1px solid #14213D22",
           marginBottom: 24,
         }}
       >
-        <button
-          onClick={() => {
-            setActiveTab("company");
-            setEditingPost(null);
-          }}
-          style={tabButtonStyle(activeTab === "company")}
-        >
-          🏠 بيانات الشركة
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab("postjob");
-            setEditingPost(null);
-          }}
-          style={tabButtonStyle(activeTab === "postjob")}
-        >
-          📝 نشر وظيفة جديدة
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab("talent");
-            setEditingPost(null);
-          }}
-          style={tabButtonStyle(activeTab === "talent")}
-        >
-          🔍 البحث عن كوادر
-        </button>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            onClick={() => {
+              setActiveTab("company");
+              setEditingPost(null);
+            }}
+            style={tabButtonStyle(activeTab === "company")}
+          >
+            🏠 بيانات الشركة
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("postjob");
+              setEditingPost(null);
+            }}
+            style={tabButtonStyle(activeTab === "postjob")}
+          >
+            📝 نشر وظيفة جديدة
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("talent");
+              setEditingPost(null);
+            }}
+            style={tabButtonStyle(activeTab === "talent")}
+          >
+            🔍 البحث عن كوادر
+          </button>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={isPremium ? premiumBadgeStyle : freeBadgeStyle}>
+            {isPremium ? "⭐ الباقة المدفوعة" : "الباقة المجانية"}
+          </span>
+          {!isPremium && (
+            <button onClick={() => setUpgradeModalOpen(true)} style={upgradeBtnStyle}>
+              🚀 طلب الترقية للباقة المدفوعة
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={{ padding: "0 20px 60px" }}>

@@ -12,9 +12,22 @@ import {
 import { auth, db } from "@/lib/firebase";
 import EmployerOnboardingForm from "./EmployerOnboardingForm";
 import { toggleJobActive, deleteJobPost, fetchApplicants, exportApplicantsCSV } from "@/lib/jobPostActions";
-import { EXPERIENCE_LEVELS, MILITARY_STATUS_LABELS, SKILL_LEVELS, LANGUAGE_LEVELS } from "@/lib/constants";
-import { normalizeEntries, formatEntries } from "@/lib/profileFields";
+import { EXPERIENCE_LEVELS } from "@/lib/constants";
 import ShareButton from "@/components/ShareButton";
+import ApplicantCard from "@/components/ApplicantCard";
+import {
+  jobCardContainerStyle,
+  tagStyle,
+  activePillStyle,
+  pausedPillStyle,
+  featuredPillStyle,
+  applicantBadgeStyle,
+  primaryActionStyle,
+  ghostActionStyle,
+  toolBtnStyle,
+  dangerToolBtnStyle,
+  JOB_TYPE_LABELS,
+} from "@/lib/jobCardStyles";
 
 type JobPost = {
   id: string;
@@ -51,13 +64,6 @@ type JobPost = {
   receiveMethod?: string;
   contactMethod?: string;
   contactValue?: string;
-};
-
-const JOB_TYPE_LABELS: Record<string, string> = {
-  full_time: "دوام كامل",
-  part_time: "دوام جزئي",
-  remote: "عن بعد",
-  freelance: "فريلانس",
 };
 
 function formatDate(ts: any) {
@@ -216,59 +222,93 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
         <div style={{ padding: 30, textAlign: "center", color: "#4A5568" }}>لسه ما نشرتش أي إعلان وظيفة.</div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {posts.map((p) => {
           const appCount = applicantCounts[p.id] || 0;
           const daysLeft = p.expiresAt ? Math.ceil((p.expiresAt.toMillis() - Date.now()) / 86400000) : null;
+          const isPaused = p.isActive === false;
           return (
-            <div key={p.id} style={{ border: "1px solid #14213D22", borderRadius: 10, padding: 18, background: p.isActive === false ? "#F0EDE3" : "transparent" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {p.isActive === false && <span style={tagStyle}>⏸ متوقف — مش ظاهر للعامة</span>}
-                  {p.featured && <span style={tagStyle}>⭐ مميز</span>}
-                  <span style={tagStyle}>👥 {appCount} متقدم</span>
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button onClick={() => onEditPost(p.id, p)} style={smallBtnStyle}>✎ تعديل</button>
-                  <button onClick={() => toggleActive(p.id, p.isActive === false)} style={smallBtnStyle}>
-                    {p.isActive === false ? "▶ إعادة تفعيل" : "⏸ إيقاف الإعلان"}
-                  </button>
-                  <button onClick={() => handleDelete(p.id)} style={smallBtnStyle}>✕ حذف نهائي</button>
-                  <ShareButton jobId={p.id} title={p.title} />
-                </div>
-              </div>
-              <div
-                onClick={() => setDetailPost(p)}
-                style={{ cursor: "pointer" }}
-              >
-                <div style={{ fontSize: 12, color: "#4A5568", marginBottom: 6 }}>
-                  {formatDate(p.createdAt)}
-                  {p.isActive !== false && daysLeft !== null ? ` · باقي ${daysLeft} يوم قبل انتهاء الإعلان` : ""}
-                </div>
-                <h4 style={{ margin: "0 0 8px" }}>{p.title}</h4>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                  <span style={tagStyle}>{p.specialization}</span>
-                  <span style={tagStyle}>{p.city} - {p.governorate}</span>
-                  <span style={tagStyle}>{JOB_TYPE_LABELS[p.jobType] || p.jobType}</span>
-                  {p.jobLevel && <span style={tagStyle}>{EXPERIENCE_LEVELS[p.jobLevel] || p.jobLevel}</span>}
-                </div>
-                <p style={{ fontSize: 14, color: "#333" }}>{(p.description || "").slice(0, 150)}</p>
-                <div style={{ fontSize: 12.5, color: "#14213D", marginTop: 6, textDecoration: "underline" }}>
-                  عرض التفاصيل الكاملة
-                </div>
-              </div>
+            <div
+              key={p.id}
+              style={{
+                ...jobCardContainerStyle,
+                border: isPaused ? "1px solid #14213D22" : jobCardContainerStyle.border,
+                overflow: "hidden",
+              }}
+            >
+              <div style={{ padding: "18px 20px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, flexWrap: "wrap" }}>
+                  <div style={{ cursor: "pointer", flex: 1, minWidth: 240 }} onClick={() => setDetailPost(p)}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                      <span style={isPaused ? pausedPillStyle : activePillStyle}>
+                        {isPaused ? "⏸ متوقف" : "● نشط"}
+                      </span>
+                      {p.featured && <span style={featuredPillStyle}>⭐ مميز</span>}
+                    </div>
+                    <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: "#14213D" }}>{p.title}</h3>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", fontSize: 13, color: "#4A5568", marginBottom: 10 }}>
+                      <span>📍 {p.city} - {p.governorate}</span>
+                      <span aria-hidden>·</span>
+                      <span>🕐 {JOB_TYPE_LABELS[p.jobType] || p.jobType}</span>
+                      {p.jobLevel && (
+                        <>
+                          <span aria-hidden>·</span>
+                          <span>🎯 {EXPERIENCE_LEVELS[p.jobLevel] || p.jobLevel}</span>
+                        </>
+                      )}
+                    </div>
+                    {p.description && (
+                      <p style={{ fontSize: 14, color: "#37414F", lineHeight: 1.6, margin: "0 0 6px" }}>
+                        {p.description.slice(0, 130)}{p.description.length > 130 ? "…" : ""}
+                      </p>
+                    )}
+                    <span style={{ fontSize: 12.5, color: "#14213D", fontWeight: 700, textDecoration: "underline" }}>
+                      عرض التفاصيل الكاملة
+                    </span>
+                  </div>
 
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-                <button onClick={() => toggleApplicants(p.id)} style={smallBtnStyle}>
-                  👥 عرض المتقدمين ({appCount})
-                </button>
-                {appCount > 0 && (
-                  <button onClick={() => exportCSV(p.id, p.title)} style={smallBtnStyle}>⬇ تحميل Excel</button>
-                )}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                    <span style={applicantBadgeStyle}>👥 {appCount} متقدم</span>
+                    <span style={{ fontSize: 12, color: "#4A5568", whiteSpace: "nowrap" }}>
+                      {formatDate(p.createdAt)}
+                      {!isPaused && daysLeft !== null ? ` · باقي ${daysLeft} يوم` : ""}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 10,
+                    marginTop: 16,
+                    paddingTop: 14,
+                    borderTop: "1px solid #14213D14",
+                  }}
+                >
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button onClick={() => toggleApplicants(p.id)} style={primaryActionStyle}>
+                      👥 عرض المتقدمين ({appCount})
+                    </button>
+                    {appCount > 0 && (
+                      <button onClick={() => exportCSV(p.id, p.title)} style={ghostActionStyle}>⬇ تحميل Excel</button>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <button onClick={() => onEditPost(p.id, p)} style={toolBtnStyle}>✎ تعديل</button>
+                    <button onClick={() => toggleActive(p.id, isPaused)} style={toolBtnStyle}>
+                      {isPaused ? "▶ تفعيل" : "⏸ إيقاف"}
+                    </button>
+                    <ShareButton jobId={p.id} title={p.title} />
+                    <button onClick={() => handleDelete(p.id)} style={dangerToolBtnStyle}>✕ حذف</button>
+                  </div>
+                </div>
               </div>
 
               {openApplicantsFor === p.id && (
-                <div style={{ marginTop: 12 }}>
+                <div style={{ padding: "16px 20px 18px", borderTop: "1px solid #14213D14", display: "flex", flexDirection: "column", gap: 12 }}>
                   {loadingApplicants ? (
                     <div style={{ padding: 12, color: "#4A5568" }}>جاري التحميل...</div>
                   ) : applicantsError ? (
@@ -276,60 +316,9 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
                   ) : applicants.length === 0 ? (
                     <div style={{ padding: 12, color: "#4A5568" }}>لسه محدش قدّم على الإعلان ده.</div>
                   ) : (
-                    applicants.map((a, i) => {
-                      const s = a.seekerSnapshot || {};
-                      return (
-                        <div key={i} style={{ background: "#F5EFDE", borderRadius: 8, padding: 12, marginBottom: 8 }}>
-                          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                            {s.photoURL && (
-                              <img src={s.photoURL} alt={s.fullName || "المتقدم"} style={{ width: 44, height: 44, objectFit: "cover", borderRadius: "50%", flexShrink: 0 }} />
-                            )}
-                            <div>
-                              <strong>{s.fullName || "بدون اسم"}</strong> — {s.jobTitle || ""}
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-                            <span style={tagStyle}>{s.specialization || ""}</span>
-                            <span style={tagStyle}>{s.city || ""} - {s.governorate || ""}</span>
-                            <span style={tagStyle}>{s.yearsOfExperience || 0} سنوات خبرة</span>
-                            {(() => {
-                              const skills = normalizeEntries(s.skills);
-                              return skills.length > 0 && (
-                                <span style={tagStyle}>🛠 {formatEntries(skills, SKILL_LEVELS)}</span>
-                              );
-                            })()}
-                            {(() => {
-                              const languages = normalizeEntries(s.languages);
-                              return languages.length > 0 && (
-                                <span style={tagStyle}>🌐 {formatEntries(languages, LANGUAGE_LEVELS)}</span>
-                              );
-                            })()}
-                            {s.militaryStatus && (
-                              <span style={tagStyle}>{MILITARY_STATUS_LABELS[s.militaryStatus] || s.militaryStatus}</span>
-                            )}
-                          </div>
-                          <div style={{ marginTop: 6, fontSize: 13.5 }}>📞 <strong>{s.phone || "—"}</strong></div>
-                          {s.email && <div style={{ marginTop: 4, fontSize: 13.5 }}>✉️ {s.email}</div>}
-                          {s.cvFileURL && (
-                            <a href={s.cvFileURL} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 6, color: "#14213D" }}>
-                              📄 السيرة الذاتية
-                            </a>
-                          )}
-                          {a.screeningAnswers && p.screeningQuestions && p.screeningQuestions.length > 0 && (
-                            <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #14213D22" }}>
-                              <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 4 }}>إجابات أسئلة الفرز:</div>
-                              {p.screeningQuestions.map((q) =>
-                                a.screeningAnswers[q.id] ? (
-                                  <div key={q.id} style={{ fontSize: 13, marginTop: 3 }}>
-                                    <strong>{q.text}:</strong> {a.screeningAnswers[q.id]}
-                                  </div>
-                                ) : null
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
+                    applicants.map((a, i) => (
+                      <ApplicantCard key={i} applicant={a} screeningQuestions={p.screeningQuestions} />
+                    ))
                   )}
                 </div>
               )}
@@ -458,5 +447,3 @@ function DetailRow({ label, value }: { label: string; value?: string }) {
   );
 }
 
-const tagStyle: React.CSSProperties = { fontSize: 12, background: "#F0EDE3", padding: "3px 10px", borderRadius: 999 };
-const smallBtnStyle: React.CSSProperties = { padding: "6px 12px", fontSize: 13, border: "1px solid #14213D", background: "transparent", borderRadius: 6, cursor: "pointer" };

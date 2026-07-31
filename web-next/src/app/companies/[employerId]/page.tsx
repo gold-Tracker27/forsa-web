@@ -2,13 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-
-const JOB_TYPE_LABELS: Record<string, string> = {
-  full_time: "دوام كامل",
-  part_time: "دوام جزئي",
-  remote: "عن بعد",
-  freelance: "فريلانس",
-};
+import { jobCardContainerStyle, tagStyle, featuredPillStyle, JOB_TYPE_LABELS } from "@/lib/jobCardStyles";
 
 async function getCompany(employerId: string): Promise<any> {
   const snap = await getDoc(doc(db, "employers", employerId));
@@ -96,34 +90,29 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {jobs.map((job) => (
           <Link
             key={job.id}
             href={`/jobs/${job.id}`}
             style={{
+              ...jobCardContainerStyle,
               display: "block",
-              border: "1px solid #14213D22",
-              borderRadius: 10,
-              padding: 16,
+              padding: 18,
               textDecoration: "none",
               color: "inherit",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ margin: 0, fontSize: 17 }}>{job.title}</h3>
-              {job.featured && (
-                <span style={{ fontSize: 12, background: "rgba(232,163,61,0.2)", padding: "3px 8px", borderRadius: 999 }}>
-                  ⭐ مميز
-                </span>
-              )}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: "#14213D" }}>{job.title}</h3>
+              {job.featured && <span style={featuredPillStyle}>⭐ مميز</span>}
             </div>
-            <div style={{ fontSize: 13, color: "#4A5568", marginTop: 4 }}>
-              {job.city} - {job.governorate}
+            <div style={{ fontSize: 13, color: "#4A5568", marginTop: 6 }}>
+              📍 {job.city} - {job.governorate}
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12, paddingTop: 12, borderTop: "1px solid #14213D14" }}>
               <span style={tagStyle}>{job.specialization}</span>
-              <span style={tagStyle}>{JOB_TYPE_LABELS[job.jobType] || job.jobType}</span>
+              <span style={tagStyle}>🕐 {JOB_TYPE_LABELS[job.jobType] || job.jobType}</span>
             </div>
           </Link>
         ))}
@@ -131,5 +120,3 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
     </div>
   );
 }
-
-const tagStyle: React.CSSProperties = { fontSize: 12, background: "#F0EDE3", padding: "3px 10px", borderRadius: 999 };

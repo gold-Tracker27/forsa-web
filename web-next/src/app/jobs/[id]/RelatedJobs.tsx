@@ -1,13 +1,7 @@
 import Link from "next/link";
 import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-
-const JOB_TYPE_LABELS: Record<string, string> = {
-  full_time: "دوام كامل",
-  part_time: "دوام جزئي",
-  remote: "عن بعد",
-  freelance: "فريلانس",
-};
+import { jobCardContainerStyle, tagStyle, JOB_TYPE_LABELS } from "@/lib/jobCardStyles";
 
 const RESULT_COUNT = 4;
 
@@ -116,21 +110,20 @@ export default async function RelatedJobs({
             key={job.id}
             href={`/jobs/${job.id}`}
             style={{
+              ...jobCardContainerStyle,
               display: "block",
-              border: "1px solid #14213D22",
-              borderRadius: 10,
               padding: 14,
               textDecoration: "none",
               color: "inherit",
             }}
           >
-            <h4 style={{ margin: "0 0 6px", fontSize: 15 }}>{job.title}</h4>
-            <div style={{ fontSize: 12, color: "#4A5568", marginBottom: 8 }}>
+            <h4 style={{ margin: "0 0 6px", fontSize: 15, fontWeight: 800, color: "#14213D" }}>{job.title}</h4>
+            <div style={{ fontSize: 12, color: "#4A5568", marginBottom: 10 }}>
               {job.showCompanyName && job.companyName ? job.companyName : "شركة غير معلنة"}
             </div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              <span style={tagStyle}>{job.governorate}</span>
-              <span style={tagStyle}>{JOB_TYPE_LABELS[job.jobType] || job.jobType}</span>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", paddingTop: 10, borderTop: "1px solid #14213D14" }}>
+              <span style={tagStyle}>📍 {job.governorate}</span>
+              <span style={tagStyle}>🕐 {JOB_TYPE_LABELS[job.jobType] || job.jobType}</span>
             </div>
           </Link>
         ))}
@@ -138,5 +131,3 @@ export default async function RelatedJobs({
     </div>
   );
 }
-
-const tagStyle: React.CSSProperties = { fontSize: 11, background: "#F0EDE3", padding: "3px 8px", borderRadius: 999 };

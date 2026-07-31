@@ -3,6 +3,7 @@
 import ShareButton from "@/components/ShareButton";
 import { EXPERIENCE_LEVELS } from "@/lib/constants";
 import { ScreeningQuestion } from "@/components/ScreeningQuestionsModal";
+import { tagStyle, featuredPillStyle, appliedPillStyle } from "@/lib/jobCardStyles";
 
 export type JobPost = {
   id: string;
@@ -50,25 +51,28 @@ export default function JobCard({ job: p, applied, saved, onToggleSave, onClick,
       onClick={unavailable ? undefined : onClick}
       style={{
         border: "1px solid #14213D22",
-        borderRadius: 10,
-        padding: 16,
+        borderRadius: 14,
+        padding: 18,
         cursor: unavailable ? "default" : "pointer",
-        opacity: unavailable ? 0.6 : 1,
+        background: unavailable ? "#F0EDE3" : "#fff",
+        boxShadow: unavailable ? "none" : "0 1px 3px rgba(20,33,61,0.06)",
       }}
     >
       {unavailable && (
-        <div style={{ fontSize: 12.5, color: "#B03A14", marginBottom: 8, fontWeight: 700 }}>
-          ⚠️ الوظيفة دي لم تعد متاحة
-        </div>
+        <div style={unavailablePillStyle}>⚠️ الوظيفة دي لم تعد متاحة</div>
       )}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h4 style={{ margin: 0, fontSize: 16 }}>{p.title}</h4>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {p.featured && (
-            <span style={{ fontSize: 12, background: "rgba(232,163,61,0.2)", padding: "3px 8px", borderRadius: 999 }}>
-              ⭐ مميز
-            </span>
-          )}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+            <h4 style={{ margin: 0, fontSize: 16.5, fontWeight: 800, color: "#14213D" }}>{p.title}</h4>
+            {p.featured && <span style={featuredPillStyle}>⭐ مميز</span>}
+            {applied && <span style={appliedPillStyle}>✓ اتقدمت</span>}
+          </div>
+          <div style={{ fontSize: 13, color: "#4A5568" }}>
+            {p.showCompanyName && p.companyName ? p.companyName : "شركة غير معلنة"} · 📍 {p.city} - {p.governorate}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
           <button
             onClick={(e) => { e.stopPropagation(); onToggleSave(); }}
             title={saved ? "إلغاء الحفظ" : "حفظ الوظيفة"}
@@ -77,13 +81,14 @@ export default function JobCard({ job: p, applied, saved, onToggleSave, onClick,
               alignItems: "center",
               gap: 4,
               fontSize: 12,
-              padding: "3px 10px",
+              padding: "5px 12px",
               borderRadius: 999,
               border: "1px solid #14213D22",
               background: saved ? "#14213D" : "#F0EDE3",
               color: saved ? "#fff" : "#14213D",
               cursor: "pointer",
               fontFamily: "inherit",
+              fontWeight: 700,
             }}
           >
             {saved ? "★ محفوظة" : "☆ حفظ"}
@@ -91,26 +96,22 @@ export default function JobCard({ job: p, applied, saved, onToggleSave, onClick,
           <ShareButton jobId={p.id} title={p.title} />
         </div>
       </div>
-      <div style={{ fontSize: 13, color: "#4A5568", marginTop: 4 }}>
-        {p.showCompanyName && p.companyName ? p.companyName : "شركة غير معلنة"} · {p.city} - {p.governorate}
-      </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12, paddingTop: 12, borderTop: "1px solid #14213D14" }}>
         <span style={tagStyle}>{p.specialization}</span>
-        {p.jobLevel && <span style={tagStyle}>{EXPERIENCE_LEVELS[p.jobLevel] || p.jobLevel}</span>}
-        <span style={tagStyle}>الراتب: {salaryTeaser(p)}</span>
-        {applied && (
-          <span style={{ ...tagStyle, background: "rgba(47,111,78,0.15)", color: "#2F6F4E", fontWeight: 700 }}>
-            ✓ اتقدمت
-          </span>
-        )}
+        {p.jobLevel && <span style={tagStyle}>🎯 {EXPERIENCE_LEVELS[p.jobLevel] || p.jobLevel}</span>}
+        <span style={tagStyle}>💰 {salaryTeaser(p)}</span>
       </div>
     </div>
   );
 }
 
-export const tagStyle: React.CSSProperties = {
-  fontSize: 12,
-  background: "#F0EDE3",
-  padding: "3px 10px",
+const unavailablePillStyle: React.CSSProperties = {
+  display: "inline-block",
+  fontSize: 12.5,
+  fontWeight: 700,
+  color: "#B03A14",
+  background: "#FBEAE3",
+  padding: "4px 12px",
   borderRadius: 999,
+  marginBottom: 12,
 };
