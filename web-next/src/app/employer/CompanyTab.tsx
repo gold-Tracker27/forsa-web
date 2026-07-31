@@ -221,7 +221,7 @@ export default function CompanyTab({ companyData, onCompanyUpdated, onEditPost }
           const appCount = applicantCounts[p.id] || 0;
           const daysLeft = p.expiresAt ? Math.ceil((p.expiresAt.toMillis() - Date.now()) / 86400000) : null;
           return (
-            <div key={p.id} style={{ border: "1px solid #14213D22", borderRadius: 10, padding: 18, opacity: p.isActive === false ? 0.65 : 1 }}>
+            <div key={p.id} style={{ border: "1px solid #14213D22", borderRadius: 10, padding: 18, background: p.isActive === false ? "#F0EDE3" : "transparent" }}>
               <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {p.isActive === false && <span style={tagStyle}>⏸ متوقف — مش ظاهر للعامة</span>}
