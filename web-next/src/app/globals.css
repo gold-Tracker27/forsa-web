@@ -46,3 +46,21 @@ h1, h2, h3, h4 {
 a {
   color: inherit;
 }
+
+/* عرض السيرة الذاتية القابلة للطباعة (ProfileTab) — بيظهر بس وقت الطباعة الفعلية */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .cv-print-view,
+  .cv-print-view * {
+    visibility: visible;
+  }
+  .cv-print-view {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+  }
+}
