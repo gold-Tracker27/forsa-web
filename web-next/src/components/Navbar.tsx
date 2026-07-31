@@ -14,6 +14,7 @@ export default function Navbar() {
   const [userType, setUserType] = useState<"job_seeker" | "employer" | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userLabel, setUserLabel] = useState("");
+  const [employerPlan, setEmployerPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export default function Navbar() {
       if (!user) {
         setUserType(null);
         setIsAdmin(false);
+        setEmployerPlan(null);
         setLoading(false);
         return;
       }
@@ -28,9 +30,20 @@ export default function Navbar() {
       setIsAdmin(ADMIN_EMAILS.includes(user.email || ""));
 
       const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        setUserType(userDoc.data().userType || null);
+      const type = userDoc.exists() ? userDoc.data().userType || null : null;
+      setUserType(type);
+
+      if (type === "employer") {
+        try {
+          const employerDoc = await getDoc(doc(db, "employers", user.uid));
+          setEmployerPlan(employerDoc.exists() ? employerDoc.data().plan || "free" : "free");
+        } catch (err) {
+          console.error("[Navbar] فشل قراءة employers/{uid} لمعرفة الباقة", err);
+        }
+      } else {
+        setEmployerPlan(null);
       }
+
       setLoading(false);
     });
     return () => unsubscribe();
@@ -42,6 +55,8 @@ export default function Navbar() {
   }
 
   if (loading || !userType) return null;
+
+  const isPremium = employerPlan === "premium";
 
   return (
     <nav
@@ -57,22 +72,27 @@ export default function Navbar() {
         background: "#fff",
       }}
     >
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         {userType === "job_seeker" && (
-          <>
-            <Link href="/seeker" style={linkStyle}>🏠 تصفح الوظائف</Link>
-          </>
+          <Link href="/seeker" style={linkStyle}>🏠 تصفح الوظائف</Link>
+        )}
+        {userType === "employer" && (
+          <span style={isPremium ? premiumBadgeStyle : freeBadgeStyle}>
+            {isPremium ? "⭐ الباقة المدفوعة" : "الباقة المجانية"}
+          </span>
         )}
         {userType === "employer" && (
           <>
-            <Link href="/employer" style={linkStyle}>🏢 لوحة صاحب العمل</Link>
+            <Link href="/employer?tab=company" style={linkStyle}>🏠 بيانات الشركة</Link>
+            <Link href="/employer?tab=postjob" style={linkStyle}>📝 نشر وظيفة جديدة</Link>
+            <Link href="/employer?tab=talent" style={linkStyle}>🔍 البحث عن كوادر</Link>
           </>
         )}
         <Link href="/companies" style={linkStyle}>🏛️ الشركات</Link>
         {isAdmin && <Link href="/admin" style={linkStyle}>📊 لوحة الإدارة</Link>}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <span style={{ fontSize: 13, color: "#4A5568" }}>{userLabel}</span>
         <button onClick={handleSignOut} style={signOutStyle}>خروج</button>
       </div>
@@ -89,6 +109,9 @@ const linkStyle: React.CSSProperties = {
   fontWeight: 600,
   border: "1px solid #14213D22",
 };
+
+const freeBadgeStyle: React.CSSProperties = { fontSize: 12, background: "#F0EDE3", padding: "3px 10px", borderRadius: 999, fontWeight: 700 };
+const premiumBadgeStyle: React.CSSProperties = { fontSize: 12, background: "rgba(232,163,61,0.2)", padding: "3px 10px", borderRadius: 999, fontWeight: 700, color: "#8A570D" };
 
 const signOutStyle: React.CSSProperties = {
   padding: "6px 14px",

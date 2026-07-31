@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -13,12 +13,30 @@ import TalentSearchTab from "./TalentSearchTab";
 
 type Status = "loading" | "no-profile" | "has-profile";
 type EditingPost = { id: string; data: any } | null;
+type Tab = "company" | "postjob" | "talent";
 
 export default function EmployerPage() {
+  return (
+    <Suspense
+      fallback={
+        <div dir="rtl" style={{ textAlign: "center", padding: 60 }}>
+          <p>جاري التحميل...</p>
+        </div>
+      }
+    >
+      <EmployerPageInner />
+    </Suspense>
+  );
+}
+
+function EmployerPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab: Tab = tabParam === "postjob" || tabParam === "talent" ? tabParam : "company";
+
   const [status, setStatus] = useState<Status>("loading");
   const [companyData, setCompanyData] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"company" | "postjob" | "talent">("company");
   const [editingPost, setEditingPost] = useState<EditingPost>(null);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
@@ -64,7 +82,7 @@ export default function EmployerPage() {
 
   function handleEditRequest(id: string, data: any) {
     setEditingPost({ id, data });
-    setActiveTab("postjob");
+    router.push("/employer?tab=postjob");
   }
 
   if (status === "loading") {
@@ -83,61 +101,13 @@ export default function EmployerPage() {
 
   return (
     <div dir="rtl">
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 12,
-          padding: "16px 20px",
-          borderBottom: "1px solid #14213D22",
-          marginBottom: 24,
-        }}
-      >
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button
-            onClick={() => {
-              setActiveTab("company");
-              setEditingPost(null);
-            }}
-            style={tabButtonStyle(activeTab === "company")}
-          >
-            🏠 بيانات الشركة
+      <div style={{ padding: "24px 20px 60px" }}>
+        {!isPremium && (
+          <button onClick={() => setUpgradeModalOpen(true)} style={upgradeBtnStyle}>
+            🚀 طلب الترقية للباقة المدفوعة
           </button>
-          <button
-            onClick={() => {
-              setActiveTab("postjob");
-              setEditingPost(null);
-            }}
-            style={tabButtonStyle(activeTab === "postjob")}
-          >
-            📝 نشر وظيفة جديدة
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab("talent");
-              setEditingPost(null);
-            }}
-            style={tabButtonStyle(activeTab === "talent")}
-          >
-            🔍 البحث عن كوادر
-          </button>
-        </div>
+        )}
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={isPremium ? premiumBadgeStyle : freeBadgeStyle}>
-            {isPremium ? "⭐ الباقة المدفوعة" : "الباقة المجانية"}
-          </span>
-          {!isPremium && (
-            <button onClick={() => setUpgradeModalOpen(true)} style={upgradeBtnStyle}>
-              🚀 طلب الترقية للباقة المدفوعة
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div style={{ padding: "0 20px 60px" }}>
         {activeTab === "company" && (
           <CompanyTab
             companyData={companyData}
@@ -153,7 +123,7 @@ export default function EmployerPage() {
             onPosted={() => {
               loadCompany();
               setEditingPost(null);
-              setActiveTab("company");
+              router.push("/employer?tab=company");
             }}
           />
         )}
@@ -167,18 +137,4 @@ export default function EmployerPage() {
   );
 }
 
-const freeBadgeStyle: React.CSSProperties = { fontSize: 12, background: "#F0EDE3", padding: "3px 10px", borderRadius: 999, fontWeight: 700 };
-const premiumBadgeStyle: React.CSSProperties = { fontSize: 12, background: "rgba(232,163,61,0.2)", padding: "3px 10px", borderRadius: 999, fontWeight: 700, color: "#8A570D" };
-const upgradeBtnStyle: React.CSSProperties = { padding: "8px 16px", background: "#E8A33D", color: "#14213D", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13.5 };
-
-function tabButtonStyle(active: boolean): React.CSSProperties {
-  return {
-    padding: "10px 20px",
-    background: active ? "#14213D" : "transparent",
-    color: active ? "#fff" : "#14213D",
-    border: "1px solid #14213D",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontWeight: 600,
-  };
-}
+const upgradeBtnStyle: React.CSSProperties = { padding: "8px 16px", background: "#E8A33D", color: "#14213D", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13.5, marginBottom: 20 };
