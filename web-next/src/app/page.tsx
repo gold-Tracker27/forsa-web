@@ -70,6 +70,7 @@ export default function LandingPage() {
         createdAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
       });
+      (window as any).fbq?.("track", "CompleteRegistration");
     } else {
       const data = snap.data();
       if (role !== data.userType) {
