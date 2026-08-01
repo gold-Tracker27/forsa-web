@@ -26,3 +26,27 @@ export const JOB_TYPE_LABELS: Record<string, string> = {
   remote: "عن بعد",
   freelance: "فريلانس",
 };
+
+export type ApplicationStatus = "submitted" | "shortlisted" | "interview" | "accepted" | "rejected";
+
+export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
+  submitted: "تقديم",
+  shortlisted: "قيد المراجعة",
+  interview: "مقابلة",
+  accepted: "قبول",
+  rejected: "رفض",
+};
+
+export const APPLICATION_STATUS_ORDER: ApplicationStatus[] = ["submitted", "shortlisted", "interview", "accepted", "rejected"];
+
+export const APPLICATION_STATUS_STYLES: Record<ApplicationStatus, CSSProperties> = {
+  submitted: { fontSize: 12, fontWeight: 700, background: "#F0EDE3", color: "#4A5568", padding: "3px 10px", borderRadius: 999 },
+  shortlisted: { fontSize: 12, fontWeight: 700, background: "rgba(232,163,61,0.2)", color: "#8A570D", padding: "3px 10px", borderRadius: 999 },
+  interview: { fontSize: 12, fontWeight: 700, background: "rgba(43,108,176,0.14)", color: "#1D4E8F", padding: "3px 10px", borderRadius: 999 },
+  accepted: { fontSize: 12, fontWeight: 700, background: "rgba(47,111,78,0.12)", color: "#2F6F4E", padding: "3px 10px", borderRadius: 999 },
+  rejected: { fontSize: 12, fontWeight: 700, background: "rgba(176,58,20,0.12)", color: "#B03A14", padding: "3px 10px", borderRadius: 999 },
+};
+
+export function applicationStatusOf(data: { status?: string }): ApplicationStatus {
+  return (data.status as ApplicationStatus) || "submitted";
+}

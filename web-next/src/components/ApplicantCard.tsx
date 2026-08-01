@@ -1,14 +1,26 @@
 "use client";
 
+import { useState } from "react";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { normalizeEntries, SkillEntry } from "@/lib/profileFields";
 import { MILITARY_STATUS_LABELS, SKILL_LEVELS, LANGUAGE_LEVELS } from "@/lib/constants";
-import { jobCardContainerStyle, tagStyle, ghostActionStyle } from "@/lib/jobCardStyles";
+import {
+  jobCardContainerStyle,
+  tagStyle,
+  ghostActionStyle,
+  ApplicationStatus,
+  APPLICATION_STATUS_LABELS,
+  APPLICATION_STATUS_ORDER,
+  APPLICATION_STATUS_STYLES,
+  applicationStatusOf,
+} from "@/lib/jobCardStyles";
 import { TagIcon, PinIcon, BriefcaseIcon, ShieldIcon, DocumentIcon } from "./icons";
 
 type ScreeningQuestion = { id: string; text: string; type: "text" | "number"; required: boolean };
 
 type Props = {
-  applicant: { seekerSnapshot?: any; screeningAnswers?: Record<string, string> };
+  applicant: { seekerSnapshot?: any; screeningAnswers?: Record<string, string>; jobPostId?: string; seekerId?: string; status?: string };
   screeningQuestions?: ScreeningQuestion[];
 };
 
@@ -21,19 +33,68 @@ export default function ApplicantCard({ applicant: a, screeningQuestions }: Prop
   const skills = normalizeEntries(s.skills);
   const languages = normalizeEntries(s.languages);
 
+  const [status, setStatus] = useState<ApplicationStatus>(applicationStatusOf(a));
+  const [savingStatus, setSavingStatus] = useState(false);
+  const [statusError, setStatusError] = useState("");
+
+  async function handleStatusChange(newStatus: ApplicationStatus) {
+    if (!a.jobPostId || !a.seekerId) {
+      setStatusError("متقدرش نحدّث الحالة — بيانات التقديم ناقصة");
+      return;
+    }
+    const previous = status;
+    setStatus(newStatus);
+    setSavingStatus(true);
+    setStatusError("");
+    try {
+      await updateDoc(doc(db, "applications", `${a.jobPostId}_${a.seekerId}`), { status: newStatus });
+    } catch (err) {
+      console.error("[ApplicantCard] فشل تحديث حالة التقديم", err);
+      setStatus(previous);
+      setStatusError("حصلت مشكلة، حاول تاني");
+    }
+    setSavingStatus(false);
+  }
+
   return (
     <div style={{ ...jobCardContainerStyle, padding: 16 }}>
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        {s.photoURL && (
-          <img
-            src={s.photoURL}
-            alt={s.fullName || "المتقدم"}
-            style={{ width: 48, height: 48, objectFit: "cover", borderRadius: "50%", flexShrink: 0 }}
-          />
-        )}
-        <div>
-          <h4 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#14213D" }}>{s.fullName || "بدون اسم"}</h4>
-          {s.jobTitle && <div style={{ fontSize: 16, color: "#4A5568" }}>{s.jobTitle}</div>}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {s.photoURL && (
+            <img
+              src={s.photoURL}
+              alt={s.fullName || "المتقدم"}
+              style={{ width: 48, height: 48, objectFit: "cover", borderRadius: "50%", flexShrink: 0 }}
+            />
+          )}
+          <div>
+            <h4 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#14213D" }}>{s.fullName || "بدون اسم"}</h4>
+            {s.jobTitle && <div style={{ fontSize: 16, color: "#4A5568" }}>{s.jobTitle}</div>}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+          <select
+            value={status}
+            disabled={savingStatus}
+            onChange={(e) => handleStatusChange(e.target.value as ApplicationStatus)}
+            style={{
+              ...APPLICATION_STATUS_STYLES[status],
+              fontSize: 14,
+              padding: "6px 12px",
+              border: "1px solid rgba(20,33,61,0.15)",
+              cursor: savingStatus ? "wait" : "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            {APPLICATION_STATUS_ORDER.map((key) => (
+              <option key={key} value={key}>
+                {APPLICATION_STATUS_LABELS[key]}
+              </option>
+            ))}
+          </select>
+          {savingStatus && <span style={{ fontSize: 11.5, color: "#4A5568" }}>جاري الحفظ...</span>}
+          {statusError && <span style={{ fontSize: 11.5, color: "#B03A14" }}>{statusError}</span>}
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 const { setGlobalOptions } = require("firebase-functions");
-const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
@@ -203,6 +203,104 @@ function buildDailySummaryEmailText({ totalCount, jobs }) {
   ].join("\n");
 }
 
+// لازم يفضل متطابق مع APPLICATION_STATUS_LABELS في web-next/src/lib/jobCardStyles.ts
+const APPLICATION_STATUS_LABELS = {
+  submitted: "تقديم",
+  shortlisted: "قيد المراجعة",
+  interview: "مقابلة",
+  accepted: "قبول",
+  rejected: "رفض",
+};
+
+const APPLICATION_STATUS_MESSAGES = {
+  submitted: (jobTitle, companyName) => `تقديمك على وظيفة "${jobTitle}" من ${companyName} رجع لحالة "تقديم".`,
+  shortlisted: (jobTitle, companyName) => `تقديمك على وظيفة "${jobTitle}" من ${companyName} بقى قيد المراجعة.`,
+  interview: (jobTitle, companyName) => `مبروك! ${companyName} عايزة تعمل معاك مقابلة على وظيفة "${jobTitle}".`,
+  accepted: (jobTitle, companyName) => `مبروك! اتقبلت على وظيفة "${jobTitle}" من ${companyName}.`,
+  rejected: (jobTitle, companyName) => `للأسف، ${companyName} قررت المتابعة مع مرشح تاني لوظيفة "${jobTitle}". فيه فرص تانية كتير مستنياك على المنصة.`,
+};
+
+function buildStatusUpdateEmailHtml({ jobTitle, companyName, status, jobLink }) {
+  const safeMessage = escapeHtml(
+    (APPLICATION_STATUS_MESSAGES[status] || APPLICATION_STATUS_MESSAGES.submitted)(jobTitle, companyName)
+  );
+  const statusLabel = escapeHtml(APPLICATION_STATUS_LABELS[status] || status);
+
+  return `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تحديث حالة تقديمك</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#FAF6EC;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#FAF6EC;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border-radius:14px;border:1px solid #DED2B5;">
+          <tr>
+            <td style="background-color:#14213D;padding:26px 28px;text-align:center;border-radius:14px 14px 0 0;">
+              <div style="font-family:'Cairo',Tahoma,Arial,sans-serif;color:#ffffff;font-size:22px;font-weight:900;">الشغل</div>
+              <div style="font-family:'Tajawal',Tahoma,Arial,sans-serif;color:#E8A33D;font-size:13px;margin-top:4px;">منصة توظيف مصرية</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px;direction:rtl;text-align:right;">
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+                <tr>
+                  <td style="background-color:#F1EAD9;border-radius:999px;padding:5px 14px;font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:13px;font-weight:700;color:#14213D;">
+                    الحالة الجديدة: ${statusLabel}
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:0 0 24px;font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:15px;color:#14213D;line-height:1.8;">
+                ${safeMessage}
+              </p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <table role="presentation" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="border-radius:8px;background-color:#14213D;">
+                          <a href="${jobLink}" target="_blank" style="display:inline-block;padding:13px 30px;font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">
+                            عرض الوظيفة
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 28px;background-color:#F1EAD9;text-align:center;border-radius:0 0 14px 14px;">
+              <div style="font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:12px;color:#4A5568;">
+                الشغل — منصة توظيف مصرية ·
+                <a href="https://elshoghl.com" style="color:#14213D;text-decoration:underline;">elshoghl.com</a>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildStatusUpdateEmailText({ jobTitle, companyName, status, jobLink }) {
+  const message = (APPLICATION_STATUS_MESSAGES[status] || APPLICATION_STATUS_MESSAGES.submitted)(jobTitle, companyName);
+  return [
+    message,
+    "",
+    `اعرض الوظيفة من هنا: ${jobLink}`,
+    "",
+    "الشغل — منصة توظيف مصرية · elshoghl.com",
+  ].join("\n");
+}
+
 async function sendViaResend({ to, subject, html, text, logPrefix }) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -254,6 +352,55 @@ exports.onNewInvitation = onDocumentCreated(
       });
     } catch (err) {
       logger.error("onNewInvitation: حصلت مشكلة غير متوقعة", err);
+    }
+  }
+);
+
+exports.onApplicationStatusChanged = onDocumentUpdated(
+  { document: "applications/{applicationId}", secrets: [RESEND_API_KEY] },
+  async (event) => {
+    const before = event.data.before.data();
+    const after = event.data.after.data();
+    if (!before || !after) return;
+
+    const beforeStatus = before.status || "submitted";
+    const afterStatus = after.status || "submitted";
+    if (beforeStatus === afterStatus) return; // مفيش تغيير حقيقي في الحالة
+
+    const db = getFirestore();
+
+    try {
+      const seekerUserSnap = await db.collection("users").doc(after.seekerId).get();
+      const seekerEmail = seekerUserSnap.exists ? seekerUserSnap.data().email : null;
+
+      if (!seekerEmail) {
+        logger.error(
+          `onApplicationStatusChanged: مفيش بريد إلكتروني مسجّل للباحث ${after.seekerId} — تم تجاهل الإشعار`
+        );
+        return;
+      }
+
+      const [jobSnap, employerSnap] = await Promise.all([
+        db.collection("job_posts").doc(after.jobPostId).get(),
+        db.collection("employers").doc(after.employerId).get(),
+      ]);
+
+      const jobTitle = jobSnap.exists ? jobSnap.data().title || "وظيفة" : "وظيفة";
+      const companyName = employerSnap.exists ? employerSnap.data().companyName || "صاحب العمل" : "صاحب العمل";
+      const jobLink = `https://elshoghl.com/jobs/${after.jobPostId}`;
+      const statusLabel = APPLICATION_STATUS_LABELS[afterStatus] || afterStatus;
+
+      const emailFields = { jobTitle, companyName, status: afterStatus, jobLink };
+
+      await sendViaResend({
+        to: seekerEmail,
+        subject: `تحديث على تقديمك لوظيفة ${jobTitle}: ${statusLabel}`,
+        html: buildStatusUpdateEmailHtml(emailFields),
+        text: buildStatusUpdateEmailText(emailFields),
+        logPrefix: "onApplicationStatusChanged",
+      });
+    } catch (err) {
+      logger.error("onApplicationStatusChanged: حصلت مشكلة غير متوقعة", err);
     }
   }
 );

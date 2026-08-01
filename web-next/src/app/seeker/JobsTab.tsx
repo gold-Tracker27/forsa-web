@@ -21,7 +21,7 @@ import { GOVERNORATES, SPECIALIZATION_OPTIONS, EXPERIENCE_LEVELS } from "@/lib/c
 import { buildSeekerSnapshot } from "@/lib/seekerSnapshot";
 import { fetchSavedJobIds, setJobSaved } from "@/lib/savedJobs";
 import JobCard, { JobPost, salaryTeaser } from "./JobCard";
-import { tagStyle } from "@/lib/jobCardStyles";
+import { tagStyle, ApplicationStatus, applicationStatusOf } from "@/lib/jobCardStyles";
 import ScreeningQuestionsModal from "@/components/ScreeningQuestionsModal";
 
 const PAGE_SIZE = 12;
@@ -47,7 +47,7 @@ export default function JobsTab() {
   const [jobTypeFilter, setJobTypeFilter] = useState("");
   const [jobLevelFilter, setJobLevelFilter] = useState("");
 
-  const [myApplications, setMyApplications] = useState<Set<string>>(new Set());
+  const [myApplications, setMyApplications] = useState<Map<string, ApplicationStatus>>(new Map());
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
   const [selectedJob, setSelectedJob] = useState<JobPost | null>(null);
   const [applying, setApplying] = useState(false);
@@ -59,7 +59,7 @@ export default function JobsTab() {
     const snap = await getDocs(
       query(collection(db, "applications"), where("seekerId", "==", user.uid))
     );
-    setMyApplications(new Set(snap.docs.map((d) => d.data().jobPostId)));
+    setMyApplications(new Map(snap.docs.map((d) => [d.data().jobPostId, applicationStatusOf(d.data())])));
   }
 
   async function loadMySavedJobs() {
@@ -159,7 +159,7 @@ export default function JobsTab() {
         screeningAnswers: answers,
         appliedAt: serverTimestamp(),
       });
-      setMyApplications((prev) => new Set(prev).add(job.id));
+      setMyApplications((prev) => new Map(prev).set(job.id, "submitted"));
       setShowQuestionsModal(false);
     } catch (err) {
       console.error("Apply failed", err);
@@ -184,7 +184,7 @@ export default function JobsTab() {
       const appId = `${job.id}_${user.uid}`;
       await deleteDoc(doc(db, "applications", appId));
       setMyApplications((prev) => {
-        const next = new Set(prev);
+        const next = new Map(prev);
         next.delete(job.id);
         return next;
       });
@@ -283,7 +283,7 @@ export default function JobsTab() {
               <JobCard
                 key={p.id}
                 job={p}
-                applied={myApplications.has(p.id)}
+                applicationStatus={myApplications.get(p.id)}
                 saved={savedJobs.has(p.id)}
                 onToggleSave={() => handleToggleSave(p.id)}
                 onClick={() => setSelectedJob(p)}

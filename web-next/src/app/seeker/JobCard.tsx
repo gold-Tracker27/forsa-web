@@ -3,7 +3,7 @@
 import ShareButton from "@/components/ShareButton";
 import { EXPERIENCE_LEVELS } from "@/lib/constants";
 import { ScreeningQuestion } from "@/components/ScreeningQuestionsModal";
-import { tagStyle, featuredPillStyle, appliedPillStyle } from "@/lib/jobCardStyles";
+import { tagStyle, featuredPillStyle, ApplicationStatus, APPLICATION_STATUS_LABELS, APPLICATION_STATUS_STYLES } from "@/lib/jobCardStyles";
 
 export type JobPost = {
   id: string;
@@ -38,14 +38,14 @@ export function salaryTeaser(p: JobPost) {
 
 type Props = {
   job: JobPost;
-  applied?: boolean;
+  applicationStatus?: ApplicationStatus;
   saved: boolean;
   onToggleSave: () => void;
   onClick?: () => void;
   unavailable?: boolean;
 };
 
-export default function JobCard({ job: p, applied, saved, onToggleSave, onClick, unavailable }: Props) {
+export default function JobCard({ job: p, applicationStatus, saved, onToggleSave, onClick, unavailable }: Props) {
   return (
     <div
       onClick={unavailable ? undefined : onClick}
@@ -66,7 +66,11 @@ export default function JobCard({ job: p, applied, saved, onToggleSave, onClick,
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
             <h4 style={{ margin: 0, fontSize: 16.5, fontWeight: 800, color: "#14213D" }}>{p.title}</h4>
             {p.featured && <span style={featuredPillStyle}>⭐ مميز</span>}
-            {applied && <span style={appliedPillStyle}>✓ اتقدمت</span>}
+            {applicationStatus && (
+              <span style={APPLICATION_STATUS_STYLES[applicationStatus]}>
+                ✓ {APPLICATION_STATUS_LABELS[applicationStatus]}
+              </span>
+            )}
           </div>
           <div style={{ fontSize: 13, color: "#4A5568" }}>
             {p.showCompanyName && p.companyName ? p.companyName : "شركة غير معلنة"} · 📍 {p.city} - {p.governorate}
