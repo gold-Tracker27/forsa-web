@@ -38,6 +38,7 @@ const linkBtnStyle: React.CSSProperties = {
 
 export default function LandingPage() {
   const router = useRouter();
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [emailPanelOpen, setEmailPanelOpen] = useState(false);
   const [pendingRole, setPendingRole] = useState<Role | null>(null);
   const [email, setEmail] = useState("");
@@ -210,6 +211,20 @@ export default function LandingPage() {
     setError("");
   }
 
+  function selectRole(role: Role) {
+    setSelectedRole(role);
+    setPendingRole(role);
+    setError("");
+  }
+
+  function backToRoleChoice() {
+    setSelectedRole(null);
+    setPendingRole(null);
+    setEmailPanelOpen(false);
+    closePhoneAuth();
+    setError("");
+  }
+
   async function handleSendCode() {
     setError("");
     setErrorColor(COLORS.stamp);
@@ -284,33 +299,129 @@ export default function LandingPage() {
         </div>
       </div>
 
-      <h2 style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: COLORS.ink, marginBottom: 16 }}>
-        اختار نوع حسابك 👇
-      </h2>
+      {!selectedRole ? (
+        <>
+          <h2 style={{ textAlign: "center", fontSize: 20, fontWeight: 700, color: COLORS.ink, marginBottom: 20 }}>
+            إنت مين؟
+          </h2>
 
-      <div style={{ display: "flex", gap: 24, flexWrap: "wrap", justifyContent: "center", alignItems: "stretch" }}>
-        <div
-          style={{
-            flex: "1 1 320px",
-            maxWidth: 400,
-            border: `1px solid ${COLORS.ink}22`,
-            borderRadius: 12,
-            padding: 24,
-            background: "#fff",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <div style={{ fontWeight: 700, color: COLORS.stamp, fontSize: 13, marginBottom: 10 }}>
-            باحث عن شغل
-          </div>
-          <h3 style={{ fontSize: 20, marginBottom: 10 }}>🔍 سجّل بياناتك</h3>
-          <p style={{ color: COLORS.inkSoft, fontSize: 14, marginBottom: 16, flex: 1 }}>
-            املا بروفايلك مرة، واظهر لكل أصحاب الأعمال اللي بيدوروا على حد زيك. مجاني تمامًا.
-          </p>
-          <div style={{ marginTop: "auto" }}>
+          <div style={{ display: "flex", flexDirection: "row", flexWrap: "nowrap", gap: 12, maxWidth: 480, margin: "0 auto" }}>
             <button
-              onClick={() => handleGoogleSignIn("job_seeker")}
+              onClick={() => selectRole("job_seeker")}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                padding: "28px 12px",
+                background: COLORS.ink,
+                color: "#fff",
+                border: "none",
+                borderRadius: 12,
+                fontWeight: 700,
+                fontSize: 16,
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span style={{ fontSize: 30 }}>🔍</span>
+              باحث عن شغل
+            </button>
+            <button
+              onClick={() => selectRole("employer")}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                padding: "28px 12px",
+                background: "#C97F1F",
+                color: "#fff",
+                border: "none",
+                borderRadius: 12,
+                fontWeight: 700,
+                fontSize: 16,
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span style={{ fontSize: 30 }}>🏢</span>
+              صاحب عمل
+            </button>
+          </div>
+
+          <p style={{ textAlign: "center", color: COLORS.inkSoft, fontSize: 13, marginTop: 20 }}>
+            💡 نفس الإيميل يقدر يستخدم الاتنين — كل ما محتاج تدوّر على شغل ادخل من زرار الباحث عن شغل، وكل ما محتاج تدوّر على كوادر لشركتك ادخل من زرار صاحب العمل.
+          </p>
+        </>
+      ) : (
+        <div style={{ maxWidth: 420, margin: "0 auto" }}>
+          <button
+            onClick={backToRoleChoice}
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: 13.5,
+              fontWeight: 700,
+              color: COLORS.inkSoft,
+              cursor: "pointer",
+              marginBottom: 14,
+              padding: 0,
+            }}
+          >
+            → رجوع / تغيير الاختيار
+          </button>
+
+          <div
+            style={{
+              border: `1px solid ${COLORS.ink}22`,
+              borderRadius: 12,
+              padding: 24,
+              background: "#fff",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {selectedRole === "job_seeker" ? (
+              <>
+                <div style={{ fontWeight: 700, color: COLORS.stamp, fontSize: 13, marginBottom: 10 }}>
+                  باحث عن شغل
+                </div>
+                <h3 style={{ fontSize: 20, marginBottom: 10 }}>🔍 سجّل بياناتك</h3>
+                <p style={{ color: COLORS.inkSoft, fontSize: 14, marginBottom: 16 }}>
+                  املا بروفايلك مرة، واظهر لكل أصحاب الأعمال اللي بيدوروا على حد زيك. مجاني تمامًا.
+                </p>
+              </>
+            ) : (
+              <>
+                <div style={{ fontWeight: 700, color: COLORS.stamp, fontSize: 13, marginBottom: 10 }}>
+                  صاحب عمل
+                </div>
+                <h3 style={{ fontSize: 20, marginBottom: 10 }}>🏢 دوّر على كوادر</h3>
+                <p style={{ color: COLORS.inkSoft, fontSize: 14, marginBottom: 16 }}>
+                  افلتر على التخصص والمدينة والخبرة، ووصل لمرشحين مناسبين لشركتك فورًا.
+                </p>
+                <div
+                  style={{
+                    display: "inline-block",
+                    background: "rgba(47,111,78,0.12)",
+                    color: COLORS.success,
+                    fontWeight: 700,
+                    fontSize: 13,
+                    padding: "6px 14px",
+                    borderRadius: 999,
+                    marginBottom: 14,
+                  }}
+                >
+                  ✓ باقة مجانية: 5 إعلانات وظائف شهريًا ببلاش
+                </div>
+              </>
+            )}
+
+            <button
+              onClick={() => handleGoogleSignIn(selectedRole)}
               disabled={loading}
               style={{
                 width: "100%",
@@ -326,7 +437,7 @@ export default function LandingPage() {
               الدخول بحساب Google
             </button>
             <div style={{ marginTop: 10, textAlign: "center" }}>
-              <button onClick={() => openEmailAuth("job_seeker")} style={linkBtnStyle}>
+              <button onClick={() => openEmailAuth(selectedRole)} style={linkBtnStyle}>
                 أو سجّل بالإيميل
               </button>
             </div>
@@ -334,83 +445,13 @@ export default function LandingPage() {
               <div style={{ fontSize: 11.5, color: COLORS.inkSoft, marginBottom: 4 }}>
                 💡 التسجيل بالإيميل أو Google أسرع وبيوصلّك بيه إشعارات بكل جديد يخص وظائفك
               </div>
-              <button onClick={() => openPhoneAuth("job_seeker")} style={linkBtnStyle}>
+              <button onClick={() => openPhoneAuth(selectedRole)} style={linkBtnStyle}>
                 أو ادخل برقم التليفون
               </button>
             </div>
           </div>
         </div>
-
-        <div
-          style={{
-            flex: "1 1 320px",
-            maxWidth: 400,
-            border: `1px solid ${COLORS.ink}22`,
-            borderRadius: 12,
-            padding: 24,
-            background: "#fff",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <div style={{ fontWeight: 700, color: COLORS.stamp, fontSize: 13, marginBottom: 10 }}>
-            صاحب عمل
-          </div>
-          <h3 style={{ fontSize: 20, marginBottom: 10 }}>🏢 دوّر على كوادر</h3>
-          <p style={{ color: COLORS.inkSoft, fontSize: 14, marginBottom: 16, flex: 1 }}>
-            افلتر على التخصص والمدينة والخبرة، ووصل لمرشحين مناسبين لشركتك فورًا.
-          </p>
-          <div style={{ marginTop: "auto" }}>
-            <div
-              style={{
-                display: "inline-block",
-                background: "rgba(47,111,78,0.12)",
-                color: COLORS.success,
-                fontWeight: 700,
-                fontSize: 13,
-                padding: "6px 14px",
-                borderRadius: 999,
-                marginBottom: 14,
-              }}
-            >
-              ✓ باقة مجانية: 5 إعلانات وظائف شهريًا ببلاش
-            </div>
-            <button
-              onClick={() => handleGoogleSignIn("employer")}
-              disabled={loading}
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                background: COLORS.ink,
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              الدخول بحساب Google
-            </button>
-            <div style={{ marginTop: 10, textAlign: "center" }}>
-              <button onClick={() => openEmailAuth("employer")} style={linkBtnStyle}>
-                أو سجّل بالإيميل
-              </button>
-            </div>
-            <div style={{ marginTop: 10, textAlign: "center" }}>
-              <div style={{ fontSize: 11.5, color: COLORS.inkSoft, marginBottom: 4 }}>
-                💡 التسجيل بالإيميل أو Google أسرع وبيوصلّك بيه إشعارات بكل جديد يخص وظائفك
-              </div>
-              <button onClick={() => openPhoneAuth("employer")} style={linkBtnStyle}>
-                أو ادخل برقم التليفون
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <p style={{ textAlign: "center", color: COLORS.inkSoft, fontSize: 13, marginTop: 20 }}>
-        💡 نفس الإيميل يقدر يستخدم الاتنين — كل ما محتاج تدوّر على شغل ادخل من كارت الباحث عن شغل، وكل ما محتاج تدوّر على كوادر لشركتك ادخل من كارت صاحب العمل.
-      </p>
+      )}
 
       {emailPanelOpen && (
         <div
