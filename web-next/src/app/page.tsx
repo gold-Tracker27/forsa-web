@@ -284,6 +284,10 @@ export default function LandingPage() {
         </div>
       </div>
 
+      <h2 style={{ textAlign: "center", fontSize: 18, fontWeight: 700, color: COLORS.ink, marginBottom: 16 }}>
+        اختار نوع حسابك 👇
+      </h2>
+
       <div style={{ display: "flex", gap: 24, flexWrap: "wrap", justifyContent: "center", alignItems: "stretch" }}>
         <div
           style={{

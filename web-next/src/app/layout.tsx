@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cairo, Tajawal } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -22,6 +22,11 @@ const tajawal = Tajawal({
 export const metadata: Metadata = {
   title: "الشغل - منصة توظيف مصرية",
   description: "الشغل: منصة توظيف مصرية للباحثين عن عمل وأصحاب الأعمال — وظائف يدوية ومكتبية بكل مصر.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
