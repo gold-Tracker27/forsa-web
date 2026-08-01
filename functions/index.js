@@ -4,7 +4,7 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const { initializeApp } = require("firebase-admin/app");
-const { getFirestore } = require("firebase-admin/firestore");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected
@@ -317,6 +317,21 @@ async function sendViaResend({ to, subject, html, text, logPrefix }) {
   }
 }
 
+async function createNotification({ userId, type, message, link }) {
+  try {
+    await getFirestore().collection("notifications").add({
+      userId,
+      type,
+      message,
+      link,
+      read: false,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    logger.error(`createNotification (${type}): فشل إنشاء إشعار لليوزر ${userId}`, err);
+  }
+}
+
 exports.onNewInvitation = onDocumentCreated(
   { document: "invitations/{invitationId}", secrets: [RESEND_API_KEY] },
   async (event) => {
@@ -326,21 +341,28 @@ exports.onNewInvitation = onDocumentCreated(
     const invitation = snap.data();
     const db = getFirestore();
 
+    const companyName = invitation.employerCompanyName || "صاحب عمل";
+    const jobTitle = invitation.jobTitle || "وظيفة";
+
+    await createNotification({
+      userId: invitation.seekerId,
+      type: "new_invitation",
+      message: `${companyName} دعتك للتقديم على وظيفة "${jobTitle}"`,
+      link: `/jobs/${invitation.jobPostId}`,
+    });
+
     try {
       const seekerUserSnap = await db.collection("users").doc(invitation.seekerId).get();
       const seekerEmail = seekerUserSnap.exists ? seekerUserSnap.data().email : null;
 
       if (!seekerEmail) {
         logger.error(
-          `onNewInvitation: مفيش بريد إلكتروني مسجّل للباحث ${invitation.seekerId} — تم تجاهل الإشعار`
+          `onNewInvitation: مفيش بريد إلكتروني مسجّل للباحث ${invitation.seekerId} — تم تجاهل الإيميل (الإشعار الداخلي اتعمل)`
         );
         return;
       }
 
-      const companyName = invitation.employerCompanyName || "صاحب عمل";
-      const jobTitle = invitation.jobTitle || "وظيفة";
       const jobLink = `https://elshoghl.com/jobs/${invitation.jobPostId}`;
-
       const emailFields = { companyName, jobTitle, jobLink };
 
       await sendViaResend({
@@ -368,6 +390,21 @@ exports.onApplicationStatusChanged = onDocumentUpdated(
     if (beforeStatus === afterStatus) return; // مفيش تغيير حقيقي في الحالة
 
     const db = getFirestore();
+    const statusLabel = APPLICATION_STATUS_LABELS[afterStatus] || afterStatus;
+
+    const jobSnap = await db.collection("job_posts").doc(after.jobPostId).get();
+    const jobData = jobSnap.exists ? jobSnap.data() : null;
+    const jobTitle = jobData?.title || "وظيفة";
+    // نفس منطق الإخفاء المستخدم في الواجهة بالظبط (JobCard.tsx وغيره):
+    // لو صاحب العمل ما فعّلش "أظهر اسم الشركة"، الإشعار/الإيميل يعرضوا نفس النص البديل زي أي مكان تاني في الموقع
+    const companyName = jobData?.showCompanyName && jobData?.companyName ? jobData.companyName : "شركة غير معلنة";
+
+    await createNotification({
+      userId: after.seekerId,
+      type: "status_changed",
+      message: `تقديمك على وظيفة "${jobTitle}" بقى ${statusLabel}`,
+      link: `/jobs/${after.jobPostId}`,
+    });
 
     try {
       const seekerUserSnap = await db.collection("users").doc(after.seekerId).get();
@@ -375,21 +412,12 @@ exports.onApplicationStatusChanged = onDocumentUpdated(
 
       if (!seekerEmail) {
         logger.error(
-          `onApplicationStatusChanged: مفيش بريد إلكتروني مسجّل للباحث ${after.seekerId} — تم تجاهل الإشعار`
+          `onApplicationStatusChanged: مفيش بريد إلكتروني مسجّل للباحث ${after.seekerId} — تم تجاهل الإيميل (الإشعار الداخلي اتعمل)`
         );
         return;
       }
 
-      const jobSnap = await db.collection("job_posts").doc(after.jobPostId).get();
-      const jobData = jobSnap.exists ? jobSnap.data() : null;
-
-      const jobTitle = jobData?.title || "وظيفة";
-      // نفس منطق الإخفاء المستخدم في الواجهة بالظبط (JobCard.tsx وغيره):
-      // لو صاحب العمل ما فعّلش "أظهر اسم الشركة"، الإيميل يعرض نفس النص البديل زي أي مكان تاني في الموقع
-      const companyName = jobData?.showCompanyName && jobData?.companyName ? jobData.companyName : "شركة غير معلنة";
       const jobLink = `https://elshoghl.com/jobs/${after.jobPostId}`;
-      const statusLabel = APPLICATION_STATUS_LABELS[afterStatus] || afterStatus;
-
       const emailFields = { jobTitle, companyName, status: afterStatus, jobLink };
 
       await sendViaResend({
@@ -402,6 +430,33 @@ exports.onApplicationStatusChanged = onDocumentUpdated(
     } catch (err) {
       logger.error("onApplicationStatusChanged: حصلت مشكلة غير متوقعة", err);
     }
+  }
+);
+
+// إشعار داخل الموقع بس لصاحب العمل عند أي تقديم جديد — من غير إيميل فوري
+// (الإيميل الفوري لكل تقديم مش مطلوب، الملخص اليومي dailyApplicationsSummary already بيغطي الإيميل)
+exports.onApplicationCreated = onDocumentCreated(
+  { document: "applications/{applicationId}" },
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+
+    const application = snap.data();
+    if (!application.employerId || !application.jobPostId) return;
+
+    const db = getFirestore();
+    const jobSnap = await db.collection("job_posts").doc(application.jobPostId).get();
+    const jobTitle = jobSnap.exists ? jobSnap.data().title || "وظيفة" : "وظيفة";
+    const applicantName = application.seekerSnapshot?.fullName;
+
+    await createNotification({
+      userId: application.employerId,
+      type: "new_applicant",
+      message: applicantName
+        ? `متقدم جديد على وظيفة "${jobTitle}": ${applicantName}`
+        : `متقدم جديد على وظيفة "${jobTitle}"`,
+      link: `/employer?tab=company`,
+    });
   }
 );
 

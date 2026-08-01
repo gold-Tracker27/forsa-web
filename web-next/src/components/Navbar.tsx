@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import NotificationBell from "./NotificationBell";
 
 const ADMIN_EMAILS = ["elshoghl27@gmail.com", "mohamedzakaria2727@gmail.com"];
 
@@ -108,6 +109,7 @@ export default function Navbar() {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <NotificationBell />
         <span style={{ fontSize: 13, color: "#4A5568" }}>{userLabel}</span>
         <button onClick={handleSignOut} style={signOutStyle}>خروج</button>
       </div>
