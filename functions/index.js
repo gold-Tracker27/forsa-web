@@ -380,13 +380,13 @@ exports.onApplicationStatusChanged = onDocumentUpdated(
         return;
       }
 
-      const [jobSnap, employerSnap] = await Promise.all([
-        db.collection("job_posts").doc(after.jobPostId).get(),
-        db.collection("employers").doc(after.employerId).get(),
-      ]);
+      const jobSnap = await db.collection("job_posts").doc(after.jobPostId).get();
+      const jobData = jobSnap.exists ? jobSnap.data() : null;
 
-      const jobTitle = jobSnap.exists ? jobSnap.data().title || "وظيفة" : "وظيفة";
-      const companyName = employerSnap.exists ? employerSnap.data().companyName || "صاحب العمل" : "صاحب العمل";
+      const jobTitle = jobData?.title || "وظيفة";
+      // نفس منطق الإخفاء المستخدم في الواجهة بالظبط (JobCard.tsx وغيره):
+      // لو صاحب العمل ما فعّلش "أظهر اسم الشركة"، الإيميل يعرض نفس النص البديل زي أي مكان تاني في الموقع
+      const companyName = jobData?.showCompanyName && jobData?.companyName ? jobData.companyName : "شركة غير معلنة";
       const jobLink = `https://elshoghl.com/jobs/${after.jobPostId}`;
       const statusLabel = APPLICATION_STATUS_LABELS[afterStatus] || afterStatus;
 

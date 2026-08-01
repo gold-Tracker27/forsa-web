@@ -74,25 +74,28 @@ export default function ApplicantCard({ applicant: a, screeningQuestions }: Prop
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-          <select
-            value={status}
-            disabled={savingStatus}
-            onChange={(e) => handleStatusChange(e.target.value as ApplicationStatus)}
-            style={{
-              ...APPLICATION_STATUS_STYLES[status],
-              fontSize: 14,
-              padding: "6px 12px",
-              border: "1px solid rgba(20,33,61,0.15)",
-              cursor: savingStatus ? "wait" : "pointer",
-              fontFamily: "inherit",
-            }}
-          >
-            {APPLICATION_STATUS_ORDER.map((key) => (
-              <option key={key} value={key}>
-                {APPLICATION_STATUS_LABELS[key]}
-              </option>
-            ))}
-          </select>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={sectionLabelStyle}>الحالة:</span>
+            <select
+              value={status}
+              disabled={savingStatus}
+              onChange={(e) => handleStatusChange(e.target.value as ApplicationStatus)}
+              style={{
+                ...APPLICATION_STATUS_STYLES[status],
+                fontSize: 14,
+                padding: "6px 12px",
+                border: "1px solid rgba(20,33,61,0.15)",
+                cursor: savingStatus ? "wait" : "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              {APPLICATION_STATUS_ORDER.map((key) => (
+                <option key={key} value={key}>
+                  {APPLICATION_STATUS_LABELS[key]}
+                </option>
+              ))}
+            </select>
+          </div>
           {savingStatus && <span style={{ fontSize: 11.5, color: "#4A5568" }}>جاري الحفظ...</span>}
           {statusError && <span style={{ fontSize: 11.5, color: "#B03A14" }}>{statusError}</span>}
         </div>
