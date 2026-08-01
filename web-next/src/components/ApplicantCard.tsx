@@ -75,7 +75,7 @@ export default function ApplicantCard({ applicant: a, screeningQuestions }: Prop
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={sectionLabelStyle}>الحالة:</span>
+            <span style={{ ...sectionLabelStyle, fontSize: 16, marginBottom: 0 }}>حالة المتقدم:</span>
             <select
               value={status}
               disabled={savingStatus}
