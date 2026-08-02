@@ -106,10 +106,10 @@ export default function Navbar() {
         )}
         <Link href="/companies" style={linkStyle}>🏛️ الشركات</Link>
         {showAdminLink && <Link href="/admin" style={linkStyle}>📊 لوحة الإدارة</Link>}
+        <NotificationBell />
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <NotificationBell />
         <span style={{ fontSize: 13, color: "#4A5568" }}>{userLabel}</span>
         <button onClick={handleSignOut} style={signOutStyle}>خروج</button>
       </div>

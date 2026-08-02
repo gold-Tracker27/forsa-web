@@ -92,14 +92,19 @@ export default function NotificationBell() {
           position: "relative",
           background: "transparent",
           border: "1px solid #14213D22",
-          borderRadius: 8,
-          padding: "6px 10px",
-          fontSize: 16,
+          borderRadius: 6,
+          padding: "6px 14px",
+          fontSize: 14,
+          fontWeight: 600,
+          color: "#14213D",
           cursor: "pointer",
-          lineHeight: 1,
+          fontFamily: "inherit",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
         }}
       >
-        🔔
+        🔔 إشعارات
         {unreadCount > 0 && (
           <span
             style={{
