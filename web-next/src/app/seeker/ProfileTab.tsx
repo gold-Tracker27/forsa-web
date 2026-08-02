@@ -5,6 +5,8 @@ import OnboardingForm from "./OnboardingForm";
 import { MILITARY_STATUS_LABELS, SKILL_LEVELS, LANGUAGE_LEVELS } from "@/lib/constants";
 import { normalizeEntries, formatEntries } from "@/lib/profileFields";
 import { tagStyle } from "@/lib/jobCardStyles";
+import ProfileCompletionBar from "@/components/ProfileCompletionBar";
+import { calculateProfileCompletion } from "@/lib/profileCompletion";
 
 const EDUCATION_LABELS: Record<string, string> = {
   none: "بدون مؤهل دراسي",
@@ -46,20 +48,21 @@ export default function ProfileTab({ data, onUpdated }: Props) {
     return (
       <OnboardingForm
         initialData={data}
-        onSaved={() => {
-          setEditing(false);
-          onUpdated(data);
-        }}
+        onSaved={(newData) => onUpdated(newData)}
+        onDone={() => setEditing(false)}
       />
     );
   }
 
   const skills = normalizeEntries(data.skills);
   const languages = normalizeEntries(data.languages);
+  const completion = calculateProfileCompletion(data);
 
   return (
     <div dir="rtl" style={{ maxWidth: 700, margin: "0 auto", padding: "30px 20px" }}>
       <h2 style={{ marginBottom: 16 }}>بروفايلك متسجل ✅</h2>
+
+      <ProfileCompletionBar percent={completion} />
 
       <div style={{ border: "1px solid #14213D22", borderRadius: 10, padding: 20 }}>
         {data.photoURL && (
