@@ -8,9 +8,10 @@ import { h3Style, descStyle, gridStyle, labelStyle, inputStyle, saveBtnStyle, sa
 type Props = {
   initialData: any;
   onSaved: (partial: any) => void;
+  isNewProfile?: boolean;
 };
 
-export default function AdditionalDetailsTab({ initialData, onSaved }: Props) {
+export default function AdditionalDetailsTab({ initialData, onSaved, isNewProfile }: Props) {
   const [hasCar, setHasCar] = useState("no");
   const [licenseType, setLicenseType] = useState("none");
   const [acceptsCompanyHousing, setAcceptsCompanyHousing] = useState(false);
@@ -37,6 +38,7 @@ export default function AdditionalDetailsTab({ initialData, onSaved }: Props) {
       licenseType,
       acceptsCompanyHousing,
       updatedAt: serverTimestamp(),
+      ...(isNewProfile ? { consentToShare: true } : {}),
     };
 
     await setDoc(doc(db, "job_seekers", user.uid), data, { merge: true });

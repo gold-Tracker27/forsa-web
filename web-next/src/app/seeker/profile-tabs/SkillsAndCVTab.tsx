@@ -12,9 +12,10 @@ import { h3Style, descStyle, labelStyle, inputStyle, saveBtnStyle, savedMsgStyle
 type Props = {
   initialData: any;
   onSaved: (partial: any) => void;
+  isNewProfile?: boolean;
 };
 
-export default function SkillsAndCVTab({ initialData, onSaved }: Props) {
+export default function SkillsAndCVTab({ initialData, onSaved, isNewProfile }: Props) {
   const [skills, setSkills] = useState<SkillEntry[]>([]);
   const [languages, setLanguages] = useState<SkillEntry[]>([]);
   const [bio, setBio] = useState("");
@@ -45,6 +46,7 @@ export default function SkillsAndCVTab({ initialData, onSaved }: Props) {
       languages,
       bio,
       updatedAt: serverTimestamp(),
+      ...(isNewProfile ? { consentToShare: true } : {}),
     };
 
     if (cvLink.trim()) data.cvFileURL = cvLink.trim();

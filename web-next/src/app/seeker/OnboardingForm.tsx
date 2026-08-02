@@ -30,6 +30,11 @@ const TABS: { key: TabKey; label: string }[] = [
 export default function OnboardingForm({ initialData, onSaved, onDone }: Props) {
   const [data, setData] = useState<any>(initialData || {});
   const [activeTab, setActiveTab] = useState<TabKey>("personal");
+  // مفيش initialData يعني ده أول مرة البروفايل بيتعمل فيها — أي تاب يتحفظ الأول بيحتاج
+  // يحطّ consentToShare:true افتراضيًا. initialData ثابتة طول عمر الفورم لأن أول ما تاب
+  // يتحفظ، loadProfile بيقفل الفورم ده تمامًا (يتستبدل بـProfileTab)، فمفيش خطر إعادة استخدام
+  // العلم ده بالغلط على بروفايل موجود بالفعل.
+  const isNewProfile = !initialData;
 
   function handleTabSaved(partial: any) {
     const merged = { ...data, ...partial };
@@ -92,11 +97,11 @@ export default function OnboardingForm({ initialData, onSaved, onDone }: Props) 
         </nav>
 
         <div style={{ flex: "3 1 400px", minWidth: 280, border: "1px solid #14213D22", borderRadius: 10, padding: 20 }}>
-          {activeTab === "personal" && <PersonalInfoTab initialData={data} onSaved={handleTabSaved} />}
-          {activeTab === "job" && <JobPreferencesTab initialData={data} onSaved={handleTabSaved} />}
-          {activeTab === "experience" && <ExperienceTab initialData={data} onSaved={handleTabSaved} />}
-          {activeTab === "skills" && <SkillsAndCVTab initialData={data} onSaved={handleTabSaved} />}
-          {activeTab === "additional" && <AdditionalDetailsTab initialData={data} onSaved={handleTabSaved} />}
+          {activeTab === "personal" && <PersonalInfoTab initialData={data} onSaved={handleTabSaved} isNewProfile={isNewProfile} />}
+          {activeTab === "job" && <JobPreferencesTab initialData={data} onSaved={handleTabSaved} isNewProfile={isNewProfile} />}
+          {activeTab === "experience" && <ExperienceTab initialData={data} onSaved={handleTabSaved} isNewProfile={isNewProfile} />}
+          {activeTab === "skills" && <SkillsAndCVTab initialData={data} onSaved={handleTabSaved} isNewProfile={isNewProfile} />}
+          {activeTab === "additional" && <AdditionalDetailsTab initialData={data} onSaved={handleTabSaved} isNewProfile={isNewProfile} />}
           {activeTab === "privacy" && <PrivacyTab initialData={data} onSaved={handleTabSaved} />}
         </div>
       </div>

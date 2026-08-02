@@ -17,9 +17,10 @@ type ExperienceRow = {
 type Props = {
   initialData: any;
   onSaved: (partial: any) => void;
+  isNewProfile?: boolean;
 };
 
-export default function ExperienceTab({ initialData, onSaved }: Props) {
+export default function ExperienceTab({ initialData, onSaved, isNewProfile }: Props) {
   const [experience, setExperience] = useState<ExperienceRow[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -56,6 +57,7 @@ export default function ExperienceTab({ initialData, onSaved }: Props) {
     const data: any = {
       workExperience: experience.filter((row) => row.company || row.jobTitle),
       updatedAt: serverTimestamp(),
+      ...(isNewProfile ? { consentToShare: true } : {}),
     };
 
     await setDoc(doc(db, "job_seekers", user.uid), data, { merge: true });

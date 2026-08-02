@@ -9,9 +9,10 @@ import { h3Style, descStyle, gridStyle, labelStyle, inputStyle, saveBtnStyle, sa
 type Props = {
   initialData: any;
   onSaved: (partial: any) => void;
+  isNewProfile?: boolean;
 };
 
-export default function JobPreferencesTab({ initialData, onSaved }: Props) {
+export default function JobPreferencesTab({ initialData, onSaved, isNewProfile }: Props) {
   const [jobTitle, setJobTitle] = useState("");
   const [specSelect, setSpecSelect] = useState("");
   const [specOther, setSpecOther] = useState("");
@@ -62,6 +63,7 @@ export default function JobPreferencesTab({ initialData, onSaved }: Props) {
       expectedSalary: expectedSalary ? Number(expectedSalary) : null,
       showSalaryToEmployers: showSalary,
       updatedAt: serverTimestamp(),
+      ...(isNewProfile ? { consentToShare: true } : {}),
     };
 
     await setDoc(doc(db, "job_seekers", user.uid), data, { merge: true });

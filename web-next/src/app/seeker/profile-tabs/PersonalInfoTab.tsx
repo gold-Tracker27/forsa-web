@@ -10,9 +10,10 @@ import { h3Style, descStyle, gridStyle, labelStyle, inputStyle, saveBtnStyle, sa
 type Props = {
   initialData: any;
   onSaved: (partial: any) => void;
+  isNewProfile?: boolean;
 };
 
-export default function PersonalInfoTab({ initialData, onSaved }: Props) {
+export default function PersonalInfoTab({ initialData, onSaved, isNewProfile }: Props) {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState(() => auth.currentUser?.email || "");
@@ -69,6 +70,7 @@ export default function PersonalInfoTab({ initialData, onSaved }: Props) {
       city: finalCity,
       isAvailable: true,
       updatedAt: serverTimestamp(),
+      ...(isNewProfile ? { consentToShare: true } : {}),
     };
 
     if (photoFile) {
