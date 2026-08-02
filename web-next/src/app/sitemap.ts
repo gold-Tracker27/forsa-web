@@ -1,5 +1,5 @@
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { slugify } from "@/lib/constants";
+import { getActiveJobsSeoData } from "@/lib/publicJobsQuery";
 
 export default async function sitemap() {
   const baseUrl = "https://elshoghl.com";
@@ -14,15 +14,28 @@ export default async function sitemap() {
   ];
 
   let jobPages: { url: string; lastModified: Date }[] = [];
+  let governoratePages: { url: string; lastModified: Date }[] = [];
+  let comboPages: { url: string; lastModified: Date }[] = [];
   try {
-    const snap = await getDocs(query(collection(db, "job_posts"), where("isActive", "==", true)));
-    jobPages = snap.docs.map((d) => ({
-      url: `${baseUrl}/jobs/${d.id}`,
+    const { jobIds, governorates, combos } = await getActiveJobsSeoData();
+
+    jobPages = jobIds.map((id) => ({
+      url: `${baseUrl}/jobs/${id}`,
+      lastModified: new Date(),
+    }));
+
+    governoratePages = governorates.map((g) => ({
+      url: `${baseUrl}/jobs/${slugify(g)}`,
+      lastModified: new Date(),
+    }));
+
+    comboPages = combos.map((c) => ({
+      url: `${baseUrl}/jobs/${slugify(c.governorate)}/${slugify(c.specialization)}`,
       lastModified: new Date(),
     }));
   } catch (err) {
     console.error("Sitemap job fetch failed", err);
   }
 
-  return [...staticPages, ...jobPages];
+  return [...staticPages, ...jobPages, ...governoratePages, ...comboPages];
 }

@@ -94,3 +94,15 @@ export const SPECIALIZATION_OPTIONS = [
   'زراعة', 'تمويل واستثمار', 'تأمين', 'عقارات', 'استيراد وتصدير',
   'تجميل وعناية', 'رياضة وتدريب بدني', 'صحافة وإعلام'
 ];
+
+export function slugify(value: string): string {
+  return value.trim().replace(/[/()]/g, "").replace(/\s+/g, "-");
+}
+
+export function findGovernorateBySlug(slug: string): string | null {
+  return GOVERNORATES.find((g) => slugify(g) === slug) || null;
+}
+
+export function findSpecialtyBySlug(slug: string): string | null {
+  return SPECIALIZATION_OPTIONS.find((s) => slugify(s) === slug) || null;
+}

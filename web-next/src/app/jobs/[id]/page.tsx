@@ -1,23 +1,50 @@
+import Link from "next/link";
 import { doc, getDoc } from "firebase/firestore";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/firebase";
 import ApplyButton from "./ApplyButton";
 import ShareButton from "@/components/ShareButton";
 import RelatedJobs from "./RelatedJobs";
-import { EXPERIENCE_LEVELS } from "@/lib/constants";
+import { EXPERIENCE_LEVELS, findGovernorateBySlug } from "@/lib/constants";
 import { tagStyle, featuredPillStyle, JOB_TYPE_LABELS } from "@/lib/jobCardStyles";
+import { getActivePublicJobs } from "@/lib/publicJobsQuery";
+import JobListItem from "../JobListItem";
 
 async function getJob(id: string): Promise<any> {
-  const snap = await getDoc(doc(db, "job_posts", id));
-  if (!snap.exists()) return null;
-  const data = snap.data();
-  if (data.isActive !== true) return null;
-  if (data.expiresAt && data.expiresAt.toMillis() < Date.now()) return null;
-  return { id: snap.id, ...data };
+  try {
+    const snap = await getDoc(doc(db, "job_posts", id));
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    if (data.isActive !== true) return null;
+    if (data.expiresAt && data.expiresAt.toMillis() < Date.now()) return null;
+    return { id: snap.id, ...data };
+  } catch {
+    // قواعد Firestore بترجع permission-denied مش "غير موجود" لما الدوكيومنت مش موجود أصلاً،
+    // فأي id غلط (زي محاولة زيارة /jobs/{slug} بمحافظة مش موجودة) لازم يتعامل معاه كـ"مش موجود".
+    return null;
+  }
 }
 
+// [id] بيمثل إما رقم وظيفة أو slug محافظة (زي القاهرة) — Next.js مش بيسمح بـ [id] و[governorate]
+// كـsegment names مختلفة في نفس المكان من شجرة الروابط، فدمجنا الحالتين هنا.
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+
+  const governorate = findGovernorateBySlug(id);
+  if (governorate) {
+    const jobs = await getActivePublicJobs({ governorate });
+    const title = `وظائف في ${governorate} | الشغل`;
+    const description =
+      jobs.length > 0
+        ? `${jobs.length} وظيفة متاحة حاليًا في ${governorate} على منصة الشغل — تصفح وقدّم دلوقتي.`
+        : `تصفح أحدث الوظائف في ${governorate} على منصة الشغل.`;
+    return {
+      title,
+      description,
+      ...(jobs.length === 0 ? { robots: { index: false, follow: true } } : {}),
+    };
+  }
+
   const job = await getJob(id);
   if (!job) {
     return { title: "وظيفة غير متاحة - الشغل" };
@@ -43,6 +70,32 @@ function salaryText(p: any) {
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+
+  const governorate = findGovernorateBySlug(id);
+  if (governorate) {
+    const jobs = await getActivePublicJobs({ governorate });
+    return (
+      <div dir="rtl" style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px" }}>
+        <h1 style={{ fontSize: 26, marginBottom: 6 }}>وظائف في {governorate}</h1>
+        <p style={{ color: "#4A5568", marginBottom: 24 }}>
+          {jobs.length > 0 ? `${jobs.length} وظيفة متاحة حاليًا في ${governorate}` : `مفيش وظائف نشطة في ${governorate} دلوقتي`}
+        </p>
+
+        {jobs.length === 0 && (
+          <div style={{ padding: 30, textAlign: "center", color: "#4A5568" }}>
+            مفيش وظائف متاحة في {governorate} دلوقتي — <Link href="/jobs" style={{ color: "#14213D" }}>تصفح كل الوظائف</Link>
+          </div>
+        )}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {jobs.map((job) => (
+            <JobListItem key={job.id} job={job} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const job = await getJob(id);
 
   if (!job) {

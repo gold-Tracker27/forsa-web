@@ -1,30 +1,19 @@
 import Link from "next/link";
-import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { jobCardContainerStyle, tagStyle, featuredPillStyle, JOB_TYPE_LABELS } from "@/lib/jobCardStyles";
+import { getActivePublicJobs, getActiveJobsSeoData } from "@/lib/publicJobsQuery";
+import { slugify } from "@/lib/constants";
+import { tagStyle } from "@/lib/jobCardStyles";
+import JobListItem from "./JobListItem";
 
 export const metadata = {
   title: "تصفح الوظائف - منصة الشغل",
   description: "تصفح أحدث الوظائف المتاحة في مصر على منصة الشغل — وظائف في كل التخصصات والمحافظات.",
 };
 
-async function getActiveJobs() {
-  const q = query(
-    collection(db, "job_posts"),
-    where("isActive", "==", true),
-    orderBy("createdAt", "desc"),
-    limit(50)
-  );
-  const snap = await getDocs(q);
-  const now = Date.now();
-  return snap.docs
-    .map((d) => ({ id: d.id, ...d.data() } as any))
-    .filter((p) => !p.expiresAt || p.expiresAt.toMillis() > now)
-    .sort((a, b) => Number(!!b.featured) - Number(!!a.featured));
-}
+const POPULAR_COMBOS_COUNT = 8;
 
 export default async function JobsListPage() {
-  const jobs = await getActiveJobs();
+  const [jobs, seoData] = await Promise.all([getActivePublicJobs(), getActiveJobsSeoData()]);
+  const popularCombos = seoData.combos.slice(0, POPULAR_COMBOS_COUNT);
 
   return (
     <div dir="rtl" style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px" }}>
@@ -41,31 +30,26 @@ export default async function JobsListPage() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {jobs.map((job) => (
-          <Link
-            key={job.id}
-            href={`/jobs/${job.id}`}
-            style={{
-              ...jobCardContainerStyle,
-              display: "block",
-              padding: 18,
-              textDecoration: "none",
-              color: "inherit",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: "#14213D" }}>{job.title}</h3>
-              {job.featured && <span style={featuredPillStyle}>⭐ مميز</span>}
-            </div>
-            <div style={{ fontSize: 13, color: "#4A5568", marginTop: 6 }}>
-              {job.showCompanyName && job.companyName ? job.companyName : "شركة غير معلنة"} · 📍 {job.city} - {job.governorate}
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12, paddingTop: 12, borderTop: "1px solid #14213D14" }}>
-              <span style={tagStyle}>{job.specialization}</span>
-              <span style={tagStyle}>🕐 {JOB_TYPE_LABELS[job.jobType] || job.jobType}</span>
-            </div>
-          </Link>
+          <JobListItem key={job.id} job={job} />
         ))}
       </div>
+
+      {popularCombos.length > 0 && (
+        <div style={{ marginTop: 40, paddingTop: 24, borderTop: "1px solid #DED2B5" }}>
+          <h2 style={{ fontSize: 18, marginBottom: 16 }}>تصفح حسب المحافظة والتخصص</h2>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {popularCombos.map((c) => (
+              <Link
+                key={`${c.governorate}-${c.specialization}`}
+                href={`/jobs/${slugify(c.governorate)}/${slugify(c.specialization)}`}
+                style={{ ...tagStyle, textDecoration: "none", color: "#14213D", padding: "8px 14px", fontSize: 13.5 }}
+              >
+                وظائف {c.specialization} في {c.governorate}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
