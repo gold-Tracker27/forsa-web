@@ -56,12 +56,12 @@ export default function PrivacyTab({ initialData, onSaved }: Props) {
         </label>
       </div>
       <p style={{ fontSize: 12.5, color: "#4A5568", marginBottom: 10 }}>
-        لو مبسوطتش الخيار ده، بروفايلك مش هيظهر في نتائج بحث أصحاب الأعمال — لكن تقدر تفضل تقدّم على الوظائف عادي.
+        من غير ده، بروفايلك مش هيظهر في نتائج بحث أصحاب الأعمال.
       </p>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <input type="checkbox" id="hideCompanyNamesCheck" checked={hideCompanyNames} onChange={(e) => setHideCompanyNames(e.target.checked)} />
         <label htmlFor="hideCompanyNamesCheck" style={{ fontSize: 13.5 }}>
-          إخفاء أسماء الشركات اللي اشتغلت فيها من قبل (يفضل يظهر المسمى الوظيفي والمدة بس)
+          إخفاء أسماء الشركات في خبراتك السابقة (هيفضل المسمى الوظيفي والمدة بس)
         </label>
       </div>
 
