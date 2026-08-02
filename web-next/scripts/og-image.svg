@@ -1,0 +1,31 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+<rect x="0" y="0" width="1200" height="630" fill="#FAF6EC"/>
+
+<rect x="660" y="75" width="480" height="480" rx="60" fill="#2F6F4E"/>
+
+<g transform="translate(755,170)" fill="none" stroke="#FAF6EC" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="16" y="12" width="88" height="60" rx="6"/>
+  <path d="M4 88 L116 88 L100 108 L20 108 Z"/>
+</g>
+
+<g transform="translate(925,170)" fill="none" stroke="#FAF6EC" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+  <line x1="28" y1="100" x2="88" y2="40"/>
+  <path d="M88 40 L104 24"/>
+  <path d="M20 108 L32 96 L40 104 L28 116 Z" fill="#FAF6EC" stroke="none"/>
+</g>
+
+<g transform="translate(755,340)" fill="none" stroke="#FAF6EC" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M16 84 A44 44 0 0 1 104 84"/>
+  <ellipse cx="60" cy="84" rx="54" ry="12"/>
+</g>
+
+<g transform="translate(925,340)" fill="none" stroke="#FAF6EC" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="84" cy="32" r="20"/>
+  <line x1="70" y1="48" x2="32" y2="86"/>
+  <path d="M32 86 L16 102"/>
+  <path d="M32 86 L48 102"/>
+</g>
+
+<text x="340" y="310" text-anchor="middle" font-family="Cairo, Tahoma, Arial, sans-serif" font-size="130" font-weight="700" fill="#14213D">الشغل</text>
+<text x="340" y="380" text-anchor="middle" font-family="Cairo, Tahoma, Arial, sans-serif" font-size="32" font-weight="600" fill="#C97F1F">وظائف بجميع التخصصات في كل مصر</text>
+</svg>

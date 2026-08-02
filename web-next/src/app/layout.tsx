@@ -19,9 +19,33 @@ const tajawal = Tajawal({
   weight: ["400", "500", "700"],
 });
 
+const SITE_URL = "https://elshoghl.com";
+const OG_IMAGE = {
+  url: `${SITE_URL}/og-image.png`,
+  width: 1200,
+  height: 630,
+  alt: "الشغل - منصة توظيف مصرية",
+};
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "الشغل - منصة توظيف مصرية",
   description: "الشغل: منصة توظيف مصرية للباحثين عن عمل وأصحاب الأعمال — وظائف يدوية ومكتبية بكل مصر.",
+  openGraph: {
+    title: "الشغل - منصة توظيف مصرية",
+    description: "الشغل: منصة توظيف مصرية للباحثين عن عمل وأصحاب الأعمال — وظائف يدوية ومكتبية بكل مصر.",
+    url: SITE_URL,
+    siteName: "الشغل",
+    images: [OG_IMAGE],
+    locale: "ar_EG",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "الشغل - منصة توظيف مصرية",
+    description: "الشغل: منصة توظيف مصرية للباحثين عن عمل وأصحاب الأعمال — وظائف يدوية ومكتبية بكل مصر.",
+    images: [OG_IMAGE.url],
+  },
 };
 
 export const viewport: Viewport = {
