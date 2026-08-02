@@ -1,14 +1,22 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { findGovernorateBySlug, findSpecialtyBySlug } from "@/lib/constants";
+import { findGovernorateBySlug, findSpecialtyBySlug, slugify } from "@/lib/constants";
 import { getActivePublicJobs } from "@/lib/publicJobsQuery";
 import JobListItem from "../../JobListItem";
 
 // [id] هنا هو slug المحافظة (زي القاهرة) — نفس تسمية segment الأب في jobs/[id]/page.tsx.
+// ملحوظة: Next.js بيسيب قيمة الـsegment الأب (id) لسه مشفّرة (percent-encoded) لما توصل
+// لـparams بتاع الصفحة المتداخلة دي (بعكس generateMetadata اللي بيوصلها فك تشفيرها)،
+// فلازم decodeURIComponent هنا صراحةً قبل أي مقارنة، وإلا findGovernorateBySlug هيفشل دايمًا.
+function resolveParams(govSlug: string, specSlug: string) {
+  const governorate = findGovernorateBySlug(decodeURIComponent(govSlug));
+  const specialization = findSpecialtyBySlug(decodeURIComponent(specSlug));
+  return { governorate, specialization };
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string; specialty: string }> }) {
   const { id: govSlug, specialty: specSlug } = await params;
-  const governorate = findGovernorateBySlug(govSlug);
-  const specialization = findSpecialtyBySlug(specSlug);
+  const { governorate, specialization } = resolveParams(govSlug, specSlug);
   if (!governorate || !specialization) return { title: "صفحة غير موجودة - الشغل" };
 
   const jobs = await getActivePublicJobs({ governorate, specialization });
@@ -31,8 +39,7 @@ export default async function GovernorateSpecialtyJobsPage({
   params: Promise<{ id: string; specialty: string }>;
 }) {
   const { id: govSlug, specialty: specSlug } = await params;
-  const governorate = findGovernorateBySlug(govSlug);
-  const specialization = findSpecialtyBySlug(specSlug);
+  const { governorate, specialization } = resolveParams(govSlug, specSlug);
   if (!governorate || !specialization) notFound();
 
   const jobs = await getActivePublicJobs({ governorate, specialization });
@@ -51,7 +58,7 @@ export default async function GovernorateSpecialtyJobsPage({
       {jobs.length === 0 && (
         <div style={{ padding: 30, textAlign: "center", color: "#4A5568" }}>
           مفيش وظائف {specialization} متاحة في {governorate} دلوقتي —{" "}
-          <Link href={`/jobs/${govSlug}`} style={{ color: "#14213D" }}>
+          <Link href={`/jobs/${slugify(governorate)}`} style={{ color: "#14213D" }}>
             تصفح كل الوظائف في {governorate}
           </Link>
         </div>

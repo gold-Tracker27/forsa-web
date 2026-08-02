@@ -30,7 +30,7 @@ async function getJob(id: string): Promise<any> {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const governorate = findGovernorateBySlug(id);
+  const governorate = findGovernorateBySlug(decodeURIComponent(id));
   if (governorate) {
     const jobs = await getActivePublicJobs({ governorate });
     const title = `وظائف في ${governorate} | الشغل`;
@@ -71,7 +71,7 @@ function salaryText(p: any) {
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const governorate = findGovernorateBySlug(id);
+  const governorate = findGovernorateBySlug(decodeURIComponent(id));
   if (governorate) {
     const jobs = await getActivePublicJobs({ governorate });
     return (
