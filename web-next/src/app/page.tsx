@@ -128,6 +128,7 @@ export default function LandingPage() {
       "auth/user-not-found": "مفيش حساب مسجل بالإيميل ده",
       "auth/invalid-credential": "الإيميل أو الباسورد غلط",
       "auth/missing-password": "اكتب الباسورد",
+      "auth/network-request-failed": "تأكد من اتصال الإنترنت وحاول تاني",
     };
     return map[err?.code] || "حصلت مشكلة، حاول تاني";
   }
@@ -182,6 +183,7 @@ export default function LandingPage() {
       "auth/code-expired": "الكود ده انتهت صلاحيته — اطلب كود جديد",
       "auth/quota-exceeded": "الخدمة مش متاحة دلوقتي — جرب تاني لاحقًا",
       "auth/operation-not-allowed": "تسجيل الدخول برقم التليفون لسه مش مفعّل على المنصة",
+      "auth/network-request-failed": "تأكد من اتصال الإنترنت وحاول تاني",
     };
     return map[err?.code] || "حصلت مشكلة، حاول تاني";
   }

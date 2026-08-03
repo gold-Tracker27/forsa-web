@@ -4,6 +4,7 @@ import { useState } from "react";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { GOVERNORATES, SPECIALIZATION_OPTIONS } from "@/lib/constants";
+import { friendlyErrorMessage } from "@/lib/errorMessages";
 import { labelStyle, inputStyle, saveBtnStyle } from "./profile-tabs/sharedStyles";
 
 type Props = {
@@ -46,7 +47,7 @@ export default function QuickSignupForm({ onSaved }: Props) {
       onSaved();
     } catch (err) {
       console.error("Quick signup save failed", err);
-      setError("حصلت مشكلة في الحفظ — حاول تاني");
+      setError(friendlyErrorMessage(err));
       setSaving(false);
     }
   }

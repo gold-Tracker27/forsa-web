@@ -21,6 +21,7 @@ import { GOVERNORATES, SPECIALIZATION_OPTIONS, EXPERIENCE_LEVELS } from "@/lib/c
 import { buildSeekerSnapshot } from "@/lib/seekerSnapshot";
 import { fetchSavedJobIds, setJobSaved } from "@/lib/savedJobs";
 import { getActiveJobsSeoData, JobCombo } from "@/lib/publicJobsQuery";
+import { friendlyErrorMessage } from "@/lib/errorMessages";
 import JobCard, { JobPost, salaryTeaser } from "./JobCard";
 import { tagStyle, ApplicationStatus, applicationStatusOf } from "@/lib/jobCardStyles";
 import ScreeningQuestionsModal from "@/components/ScreeningQuestionsModal";
@@ -123,9 +124,7 @@ export default function JobsTab({ completionPercent }: Props) {
       setError("");
     } catch (err) {
       console.error("Job fetch failed", err);
-      setError(
-        "حصلت مشكلة في التحميل — افتح Console (F12) وشوف تفاصيل الخطأ. لو الخطأ بيقول \"requires an index\"، هيبقى فيه رابط تدوس عليه يعمل الفهرس المطلوب تلقائيًا."
-      );
+      setError(friendlyErrorMessage(err));
     }
   }
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { GOVERNORATES, GOVERNORATE_CITIES, SPECIALIZATION_OPTIONS, EXPERIENCE_LEVELS, SCREENING_QUESTION_OPTIONS } from "@/lib/constants";
+import { friendlyErrorMessage } from "@/lib/errorMessages";
 
 const AGE_OPTIONS = Array.from({ length: 50 }, (_, i) => 16 + i);
 
@@ -244,7 +245,7 @@ export default function PostJobTab({ employerPlan, companyName, editingPost, onP
       onPosted();
     } catch (err: any) {
       console.error("Job post save failed", err);
-      alert(err.message || "حصلت مشكلة — جرب تاني.");
+      alert(friendlyErrorMessage(err));
     }
     setSubmitting(false);
   }

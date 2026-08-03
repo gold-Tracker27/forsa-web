@@ -9,6 +9,7 @@ import {
   EXPERIENCE_LEVELS,
 } from "@/lib/constants";
 import SeekerDetailModal from "./SeekerDetailModal";
+import { friendlyErrorMessage } from "@/lib/errorMessages";
 
 const PAGE_SIZE = 12;
 
@@ -65,9 +66,7 @@ export default function TalentSearchTab({ employerPlan }: Props) {
       setError("");
     } catch (err) {
       console.error("Seeker search failed", err);
-      setError(
-        "حصلت مشكلة في البحث — افتح Console (F12) وشوف تفاصيل الخطأ. لو الخطأ بيقول \"requires an index\"، هيبقى فيه رابط تدوس عليه يعمل الفهرس المطلوب تلقائيًا."
-      );
+      setError(friendlyErrorMessage(err));
     }
 
     if (reset) setLoading(false);

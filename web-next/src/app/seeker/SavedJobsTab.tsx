@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase";
 import { fetchSavedJobsWithDetails, setJobSaved, SavedJobEntry } from "@/lib/savedJobs";
+import { friendlyErrorMessage } from "@/lib/errorMessages";
 import JobCard from "./JobCard";
 
 export default function SavedJobsTab() {
@@ -21,9 +22,7 @@ export default function SavedJobsTab() {
       setError("");
     } catch (err) {
       console.error("Saved jobs fetch failed", err);
-      setError(
-        "حصلت مشكلة في التحميل — افتح Console (F12) وشوف تفاصيل الخطأ. لو الخطأ بيقول \"requires an index\"، هيبقى فيه رابط تدوس عليه يعمل الفهرس المطلوب تلقائيًا."
-      );
+      setError(friendlyErrorMessage(err));
     }
     setLoading(false);
   }
