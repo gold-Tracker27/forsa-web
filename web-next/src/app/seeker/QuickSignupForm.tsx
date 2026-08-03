@@ -5,6 +5,7 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { GOVERNORATES, SPECIALIZATION_OPTIONS } from "@/lib/constants";
 import { friendlyErrorMessage } from "@/lib/errorMessages";
+import { logClientError } from "@/lib/errorLog";
 import { labelStyle, inputStyle, saveBtnStyle } from "./profile-tabs/sharedStyles";
 
 type Props = {
@@ -25,12 +26,23 @@ export default function QuickSignupForm({ onSaved }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user) {
+      // نادر جدًا — بيحصل بس لو التسجيل اتحفظ قبل ما جلسة Firebase تتحمّل بالكامل. من غير
+      // الرسالة دي، الزرار كان بيعمل return صامت تمامًا من غير أي تفسير للمستخدم.
+      setError("حصلت مشكلة في الجلسة — رجّع افتح الصفحة تاني وسجّل دخولك من جديد");
+      logClientError("quick_signup_no_user");
+      return;
+    }
 
     setSaving(true);
     setError("");
 
     const specialization = specSelect === "other" ? specOther.trim() : specSelect;
+    if (!specialization) {
+      setError("اكتب التخصص أو اختاره من القايمة");
+      setSaving(false);
+      return;
+    }
 
     try {
       await setDoc(doc(db, "job_seekers", user.uid), {
@@ -47,6 +59,7 @@ export default function QuickSignupForm({ onSaved }: Props) {
       onSaved();
     } catch (err) {
       console.error("Quick signup save failed", err);
+      logClientError("quick_signup_save", err);
       setError(friendlyErrorMessage(err));
       setSaving(false);
     }
@@ -102,6 +115,7 @@ export default function QuickSignupForm({ onSaved }: Props) {
               type="text"
               value={specOther}
               onChange={(e) => setSpecOther(e.target.value)}
+              required
               placeholder="مثال: تخصص نادر مش موجود في القايمة"
               style={{ ...inputStyle, marginTop: 8 }}
             />

@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   GoogleAuthProvider,
   signInWithPopup,
   signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -16,8 +17,13 @@ import {
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { normalizeEgyptianPhone } from "@/lib/phoneAuth";
+import { logClientError } from "@/lib/errorLog";
 
 type Role = "job_seeker" | "employer";
+
+// بيتخزّن قبل signInWithRedirect عشان نعرف نكمّل التسجيل بيه لما المستخدم يرجع من جوجل —
+// الصفحة بتتحمّل من الصفر بعد الريدايركت، فأي state عادي في الكومبوننت بيتفقد.
+const PENDING_ROLE_STORAGE_KEY = "elshoghl_pending_auth_role";
 
 const COLORS = {
   ink: "#14213D",
@@ -53,6 +59,30 @@ export default function LandingPage() {
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+
+  // لما signInWithPopup يفشل (شائع جوه WebView بتاع تطبيقات السوشيال ميديا) بنعمل fallback
+  // لـsignInWithRedirect، اللي بيودّي المستخدم لجوجل وبيرجّعه لنفس الصفحة بعد ما يسجّل دخول —
+  // من غير الكود ده، النتيجة كانت بتضيع تمامًا ومفيش حاجة بتكمّل (لا users/{uid} بيتعمل ولا
+  // توجيه لـ/seeker أو /employer)، والمستخدم يفضل واقف في نفس الصفحة من غير أي تفسير.
+  useEffect(() => {
+    (async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (!result) return;
+        const storedRole = localStorage.getItem(PENDING_ROLE_STORAGE_KEY) as Role | null;
+        localStorage.removeItem(PENDING_ROLE_STORAGE_KEY);
+        if (storedRole) {
+          await routeAfterAuth(storedRole);
+        }
+      } catch (err: any) {
+        console.error("Google redirect result failed", err);
+        logClientError("google_redirect_result", err);
+        setErrorColor(COLORS.stamp);
+        setError("حصلت مشكلة في تسجيل الدخول بجوجل، جرب طريقة تانية");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function routeAfterAuth(role: Role) {
     const user = auth.currentUser;
@@ -97,10 +127,15 @@ export default function LandingPage() {
       await routeAfterAuth(role);
     } catch (err: any) {
       console.warn("popup failed, falling back to redirect", err);
+      logClientError("google_popup_signin", err);
       try {
+        localStorage.setItem(PENDING_ROLE_STORAGE_KEY, role);
         await signInWithRedirect(auth, provider);
       } catch (err2: any) {
-        setError("حصلت مشكلة، حاول تاني");
+        console.error("Google redirect fallback failed", err2);
+        logClientError("google_redirect_signin", err2);
+        localStorage.removeItem(PENDING_ROLE_STORAGE_KEY);
+        setError("حصلت مشكلة في تسجيل الدخول بجوجل، جرب طريقة تانية (إيميل أو تليفون)");
         setLoading(false);
       }
     }
@@ -142,6 +177,8 @@ export default function LandingPage() {
       closeEmailAuth();
       await routeAfterAuth(pendingRole);
     } catch (err: any) {
+      console.error("Email sign up failed", err);
+      logClientError("email_signup", err);
       setError(emailAuthErrorMessage(err));
     }
   }
@@ -155,6 +192,8 @@ export default function LandingPage() {
       closeEmailAuth();
       await routeAfterAuth(pendingRole);
     } catch (err: any) {
+      console.error("Email login failed", err);
+      logClientError("email_login", err);
       setError(emailAuthErrorMessage(err));
     }
   }
@@ -243,6 +282,7 @@ export default function LandingPage() {
       setPhoneStep("enter-code");
     } catch (err: any) {
       console.error("Send code failed", err);
+      logClientError("phone_send_code", err);
       setError(phoneAuthErrorMessage(err));
       // نلغي الـ verifier عشان محاولة تانية تعمل واحد جديد صحيح
       recaptchaVerifierRef.current = null;
@@ -261,6 +301,7 @@ export default function LandingPage() {
       await routeAfterAuth(pendingRole);
     } catch (err: any) {
       console.error("Verify code failed", err);
+      logClientError("phone_verify_code", err);
       setError(phoneAuthErrorMessage(err));
     }
     setPhoneLoading(false);
