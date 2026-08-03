@@ -17,19 +17,23 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [userLabel, setUserLabel] = useState("");
   const [employerPlan, setEmployerPlan] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
+        setSignedIn(false);
         setUserType(null);
         setIsAdmin(false);
         setEmployerPlan(null);
-        setLoading(false);
+        setAuthLoading(false);
         return;
       }
+      setSignedIn(true);
       setUserLabel(user.displayName || user.email || user.phoneNumber || "");
       setIsAdmin(ADMIN_EMAILS.includes(user.email || ""));
+      setAuthLoading(false);
 
       const userDoc = await getDoc(doc(db, "users", user.uid));
       const type = userDoc.exists() ? userDoc.data().userType || null : null;
@@ -45,8 +49,6 @@ export default function Navbar() {
       } else {
         setEmployerPlan(null);
       }
-
-      setLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -56,7 +58,10 @@ export default function Navbar() {
     router.push("/");
   }
 
-  if (loading || !userType) return null;
+  // العناصر اللي مش محتاجة نوع الحساب (الشركات، الإشعارات، اسم المستخدم، الخروج) تتعرض
+  // فور تسجيل الدخول، من غير ما تستنى قراءة users/{uid} — عشان الهيدر ميختفيش بالكامل
+  // في اللحظات القليلة قبل ما نوع الحساب يتحدد (ملحوظ أكتر بعد تسريع فورم التسجيل الأول).
+  if (authLoading || !signedIn) return null;
 
   const isPremium = employerPlan === "premium";
 
