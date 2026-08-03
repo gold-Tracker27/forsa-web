@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { findGovernorateBySlug, findSpecialtyBySlug, slugify } from "@/lib/constants";
-import { getActivePublicJobs } from "@/lib/publicJobsQuery";
+import { getActivePublicJobs, getActiveJobsSeoData } from "@/lib/publicJobsQuery";
+import BrowseSidebar from "@/components/BrowseSidebar";
 import JobListItem from "../../JobListItem";
+
+const POPULAR_COMBOS_COUNT = 8;
 
 // [id] هنا هو slug المحافظة (زي القاهرة) — نفس تسمية segment الأب في jobs/[id]/page.tsx.
 // ملحوظة: Next.js بيسيب قيمة الـsegment الأب (id) لسه مشفّرة (percent-encoded) لما توصل
@@ -42,10 +45,14 @@ export default async function GovernorateSpecialtyJobsPage({
   const { governorate, specialization } = resolveParams(govSlug, specSlug);
   if (!governorate || !specialization) notFound();
 
-  const jobs = await getActivePublicJobs({ governorate, specialization });
+  const [jobs, seoData] = await Promise.all([
+    getActivePublicJobs({ governorate, specialization }),
+    getActiveJobsSeoData(),
+  ]);
+  const popularCombos = seoData.combos.slice(0, POPULAR_COMBOS_COUNT);
 
   return (
-    <div dir="rtl" style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px" }}>
+    <div dir="rtl" style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px" }}>
       <h1 style={{ fontSize: 26, marginBottom: 6 }}>
         وظائف {specialization} في {governorate}
       </h1>
@@ -55,19 +62,25 @@ export default async function GovernorateSpecialtyJobsPage({
           : `مفيش وظائف ${specialization} نشطة في ${governorate} دلوقتي`}
       </p>
 
-      {jobs.length === 0 && (
-        <div style={{ padding: 30, textAlign: "center", color: "#4A5568" }}>
-          مفيش وظائف {specialization} متاحة في {governorate} دلوقتي —{" "}
-          <Link href={`/jobs/${slugify(governorate)}`} style={{ color: "#14213D" }}>
-            تصفح كل الوظائف في {governorate}
-          </Link>
-        </div>
-      )}
+      <div className="browse-layout">
+        <div className="browse-main">
+          {jobs.length === 0 && (
+            <div style={{ padding: 30, textAlign: "center", color: "#4A5568" }}>
+              مفيش وظائف {specialization} متاحة في {governorate} دلوقتي —{" "}
+              <Link href={`/jobs/${slugify(governorate)}`} style={{ color: "#14213D" }}>
+                تصفح كل الوظائف في {governorate}
+              </Link>
+            </div>
+          )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {jobs.map((job) => (
-          <JobListItem key={job.id} job={job} />
-        ))}
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {jobs.map((job) => (
+              <JobListItem key={job.id} job={job} />
+            ))}
+          </div>
+        </div>
+
+        <BrowseSidebar combos={popularCombos} />
       </div>
     </div>
   );

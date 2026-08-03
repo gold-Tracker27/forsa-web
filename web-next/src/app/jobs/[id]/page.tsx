@@ -7,8 +7,11 @@ import ShareButton from "@/components/ShareButton";
 import RelatedJobs from "./RelatedJobs";
 import { EXPERIENCE_LEVELS, findGovernorateBySlug } from "@/lib/constants";
 import { tagStyle, featuredPillStyle, JOB_TYPE_LABELS } from "@/lib/jobCardStyles";
-import { getActivePublicJobs } from "@/lib/publicJobsQuery";
+import { getActivePublicJobs, getActiveJobsSeoData } from "@/lib/publicJobsQuery";
+import BrowseSidebar from "@/components/BrowseSidebar";
 import JobListItem from "../JobListItem";
+
+const POPULAR_COMBOS_COUNT = 8;
 
 async function getJob(id: string): Promise<any> {
   try {
@@ -73,24 +76,34 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
 
   const governorate = findGovernorateBySlug(decodeURIComponent(id));
   if (governorate) {
-    const jobs = await getActivePublicJobs({ governorate });
+    const [jobs, seoData] = await Promise.all([
+      getActivePublicJobs({ governorate }),
+      getActiveJobsSeoData(),
+    ]);
+    const popularCombos = seoData.combos.slice(0, POPULAR_COMBOS_COUNT);
     return (
-      <div dir="rtl" style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px" }}>
+      <div dir="rtl" style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px" }}>
         <h1 style={{ fontSize: 26, marginBottom: 6 }}>وظائف في {governorate}</h1>
         <p style={{ color: "#4A5568", marginBottom: 24 }}>
           {jobs.length > 0 ? `${jobs.length} وظيفة متاحة حاليًا في ${governorate}` : `مفيش وظائف نشطة في ${governorate} دلوقتي`}
         </p>
 
-        {jobs.length === 0 && (
-          <div style={{ padding: 30, textAlign: "center", color: "#4A5568" }}>
-            مفيش وظائف متاحة في {governorate} دلوقتي — <Link href="/jobs" style={{ color: "#14213D" }}>تصفح كل الوظائف</Link>
-          </div>
-        )}
+        <div className="browse-layout">
+          <div className="browse-main">
+            {jobs.length === 0 && (
+              <div style={{ padding: 30, textAlign: "center", color: "#4A5568" }}>
+                مفيش وظائف متاحة في {governorate} دلوقتي — <Link href="/jobs" style={{ color: "#14213D" }}>تصفح كل الوظائف</Link>
+              </div>
+            )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {jobs.map((job) => (
-            <JobListItem key={job.id} job={job} />
-          ))}
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {jobs.map((job) => (
+                <JobListItem key={job.id} job={job} />
+              ))}
+            </div>
+          </div>
+
+          <BrowseSidebar combos={popularCombos} />
         </div>
       </div>
     );
@@ -102,8 +115,13 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     notFound();
   }
 
+  const seoData = await getActiveJobsSeoData();
+  const popularCombos = seoData.combos.slice(0, POPULAR_COMBOS_COUNT);
+
   return (
-    <div dir="rtl" style={{ maxWidth: 700, margin: "0 auto", padding: "40px 20px" }}>
+    <div dir="rtl" style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px" }}>
+      <div className="browse-layout">
+        <div className="browse-main">
       <h1 style={{ fontSize: 26, marginBottom: 6 }}>{job.title}</h1>
       <div style={{ color: "#4A5568", marginBottom: 16 }}>
         {job.showCompanyName && job.companyName ? job.companyName : "شركة غير معلنة"}
@@ -158,6 +176,10 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
       )}
 
       <RelatedJobs jobId={job.id} specialization={job.specialization} governorate={job.governorate} />
+        </div>
+
+        <BrowseSidebar combos={popularCombos} />
+      </div>
     </div>
   );
 }

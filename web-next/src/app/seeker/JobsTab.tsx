@@ -24,7 +24,7 @@ import { getActiveJobsSeoData, JobCombo } from "@/lib/publicJobsQuery";
 import JobCard, { JobPost, salaryTeaser } from "./JobCard";
 import { tagStyle, ApplicationStatus, applicationStatusOf } from "@/lib/jobCardStyles";
 import ScreeningQuestionsModal from "@/components/ScreeningQuestionsModal";
-import BrowseByCombos from "@/components/BrowseByCombos";
+import BrowseSidebar from "@/components/BrowseSidebar";
 
 const PAGE_SIZE = 12;
 const POPULAR_COMBOS_COUNT = 8;
@@ -207,8 +207,8 @@ export default function JobsTab() {
 
   return (
     <div dir="rtl">
-      <div className="jobs-tab-layout">
-        <div className="jobs-tab-main">
+      <div className="browse-layout">
+        <div className="browse-main">
       {/* الفلاتر */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}>
         <div>
@@ -319,14 +319,7 @@ export default function JobsTab() {
       )}
         </div>
 
-        {popularCombos.length > 0 && (
-          <details className="jobs-tab-sidebar" open>
-            <summary style={{ cursor: "pointer", fontSize: 15, fontWeight: 700, color: "#14213D", marginBottom: 10 }}>
-              تصفح حسب المحافظة والتخصص
-            </summary>
-            <BrowseByCombos combos={popularCombos} variant="list" />
-          </details>
-        )}
+        <BrowseSidebar combos={popularCombos} />
       </div>
 
       {/* مودال تفاصيل الوظيفة */}

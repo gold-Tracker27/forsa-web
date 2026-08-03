@@ -47,21 +47,21 @@ a {
   color: inherit;
 }
 
-/* تخطيط تاب الوظائف عند الباحث (JobsTab): عمود رئيسي + عمود جانبي "تصفح حسب" لاصق أثناء
-   السكرول على الشاشات الكبيرة. order:-1 بيخلي العمود الجانبي يبان الأول (يمين في RTL)،
-   وعلى الموبايل بيترتب بعد المحتوى الرئيسي بدل ما يسبقه. */
-.jobs-tab-layout {
+/* تخطيط أي صفحة وظائف فيها عمود رئيسي + عمود جانبي "تصفح حسب" لاصق أثناء السكرول على
+   الشاشات الكبيرة (مستخدم في JobsTab وصفحات /jobs/[id] العامة). order:-1 بيخلي العمود
+   الجانبي يبان الأول (يمين في RTL)، وعلى الموبايل بيترتب بعد المحتوى الرئيسي بدل ما يسبقه. */
+.browse-layout {
   display: flex;
   gap: 24px;
   align-items: flex-start;
 }
 
-.jobs-tab-main {
+.browse-main {
   flex: 3 1 400px;
   min-width: 0;
 }
 
-.jobs-tab-sidebar {
+.browse-sidebar {
   flex: 1 1 240px;
   max-width: 280px;
   position: sticky;
@@ -70,10 +70,10 @@ a {
 }
 
 @media (max-width: 860px) {
-  .jobs-tab-layout {
+  .browse-layout {
     flex-direction: column;
   }
-  .jobs-tab-sidebar {
+  .browse-sidebar {
     position: static;
     max-width: 100%;
     width: 100%;
