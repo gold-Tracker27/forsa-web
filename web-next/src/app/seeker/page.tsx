@@ -5,10 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import OnboardingForm from "./OnboardingForm";
+import QuickSignupForm from "./QuickSignupForm";
 import JobsTab from "./JobsTab";
 import ProfileTab from "./ProfileTab";
 import SavedJobsTab from "./SavedJobsTab";
+import { calculateProfileCompletion } from "@/lib/profileCompletion";
 
 type Status = "loading" | "no-profile" | "has-profile";
 type Tab = "jobs" | "saved" | "profile";
@@ -72,13 +73,15 @@ function SeekerPageInner() {
   }
 
   if (status === "no-profile") {
-    return <OnboardingForm onSaved={loadProfile} />;
+    return <QuickSignupForm onSaved={loadProfile} />;
   }
+
+  const completionPercent = calculateProfileCompletion(profileData);
 
   return (
     <div dir="rtl">
       <div style={{ width: "100%", maxWidth: 900, margin: "0 auto", padding: "24px 20px 60px" }}>
-        {activeTab === "jobs" && <JobsTab />}
+        {activeTab === "jobs" && <JobsTab completionPercent={completionPercent} />}
         {activeTab === "saved" && <SavedJobsTab />}
         {activeTab === "profile" && (
           <ProfileTab data={profileData} onUpdated={loadProfile} />

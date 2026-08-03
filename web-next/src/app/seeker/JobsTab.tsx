@@ -25,6 +25,7 @@ import JobCard, { JobPost, salaryTeaser } from "./JobCard";
 import { tagStyle, ApplicationStatus, applicationStatusOf } from "@/lib/jobCardStyles";
 import ScreeningQuestionsModal from "@/components/ScreeningQuestionsModal";
 import BrowseSidebar from "@/components/BrowseSidebar";
+import ProfileCompletionBar from "@/components/ProfileCompletionBar";
 
 const PAGE_SIZE = 12;
 const POPULAR_COMBOS_COUNT = 8;
@@ -36,7 +37,11 @@ const JOB_TYPE_LABELS: Record<string, string> = {
   freelance: "فريلانس",
 };
 
-export default function JobsTab() {
+type Props = {
+  completionPercent?: number;
+};
+
+export default function JobsTab({ completionPercent }: Props) {
   const [jobs, setJobs] = useState<JobPost[]>([]);
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -209,6 +214,9 @@ export default function JobsTab() {
     <div dir="rtl">
       <div className="browse-layout">
         <div className="browse-main">
+      {typeof completionPercent === "number" && completionPercent < 100 && (
+        <ProfileCompletionBar percent={completionPercent} />
+      )}
       {/* الفلاتر */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}>
         <div>
