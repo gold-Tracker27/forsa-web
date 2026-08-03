@@ -82,7 +82,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     ]);
     const popularCombos = seoData.combos.slice(0, POPULAR_COMBOS_COUNT);
     return (
-      <div dir="rtl" style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px" }}>
+      <div dir="rtl" style={{ width: "100%", maxWidth: 1120, margin: "0 auto", padding: "40px 20px" }}>
         <h1 style={{ fontSize: 26, marginBottom: 6 }}>وظائف في {governorate}</h1>
         <p style={{ color: "#4A5568", marginBottom: 24 }}>
           {jobs.length > 0 ? `${jobs.length} وظيفة متاحة حاليًا في ${governorate}` : `مفيش وظائف نشطة في ${governorate} دلوقتي`}
@@ -119,7 +119,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const popularCombos = seoData.combos.slice(0, POPULAR_COMBOS_COUNT);
 
   return (
-    <div dir="rtl" style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px" }}>
+    <div dir="rtl" style={{ width: "100%", maxWidth: 1020, margin: "0 auto", padding: "40px 20px" }}>
       <div className="browse-layout">
         <div className="browse-main">
       <h1 style={{ fontSize: 26, marginBottom: 6 }}>{job.title}</h1>

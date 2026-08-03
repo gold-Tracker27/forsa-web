@@ -77,7 +77,7 @@ function SeekerPageInner() {
 
   return (
     <div dir="rtl">
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px 60px" }}>
+      <div style={{ width: "100%", maxWidth: 900, margin: "0 auto", padding: "24px 20px 60px" }}>
         {activeTab === "jobs" && <JobsTab />}
         {activeTab === "saved" && <SavedJobsTab />}
         {activeTab === "profile" && (

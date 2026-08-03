@@ -52,7 +52,7 @@ export default async function GovernorateSpecialtyJobsPage({
   const popularCombos = seoData.combos.slice(0, POPULAR_COMBOS_COUNT);
 
   return (
-    <div dir="rtl" style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px" }}>
+    <div dir="rtl" style={{ width: "100%", maxWidth: 1120, margin: "0 auto", padding: "40px 20px" }}>
       <h1 style={{ fontSize: 26, marginBottom: 6 }}>
         وظائف {specialization} في {governorate}
       </h1>
