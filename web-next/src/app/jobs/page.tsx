@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { getActivePublicJobs, getActiveJobsSeoData } from "@/lib/publicJobsQuery";
-import { slugify } from "@/lib/constants";
-import { tagStyle } from "@/lib/jobCardStyles";
+import BrowseByCombos from "@/components/BrowseByCombos";
 import JobListItem from "./JobListItem";
 
 export const metadata = {
@@ -37,17 +35,7 @@ export default async function JobsListPage() {
       {popularCombos.length > 0 && (
         <div style={{ marginTop: 40, paddingTop: 24, borderTop: "1px solid #DED2B5" }}>
           <h2 style={{ fontSize: 18, marginBottom: 16 }}>تصفح حسب المحافظة والتخصص</h2>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {popularCombos.map((c) => (
-              <Link
-                key={`${c.governorate}-${c.specialization}`}
-                href={`/jobs/${slugify(c.governorate)}/${slugify(c.specialization)}`}
-                style={{ ...tagStyle, textDecoration: "none", color: "#14213D", padding: "8px 14px", fontSize: 13.5 }}
-              >
-                وظائف {c.specialization} في {c.governorate}
-              </Link>
-            ))}
-          </div>
+          <BrowseByCombos combos={popularCombos} variant="inline" />
         </div>
       )}
     </div>

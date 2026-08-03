@@ -20,11 +20,14 @@ import { auth, db } from "@/lib/firebase";
 import { GOVERNORATES, SPECIALIZATION_OPTIONS, EXPERIENCE_LEVELS } from "@/lib/constants";
 import { buildSeekerSnapshot } from "@/lib/seekerSnapshot";
 import { fetchSavedJobIds, setJobSaved } from "@/lib/savedJobs";
+import { getActiveJobsSeoData, JobCombo } from "@/lib/publicJobsQuery";
 import JobCard, { JobPost, salaryTeaser } from "./JobCard";
 import { tagStyle, ApplicationStatus, applicationStatusOf } from "@/lib/jobCardStyles";
 import ScreeningQuestionsModal from "@/components/ScreeningQuestionsModal";
+import BrowseByCombos from "@/components/BrowseByCombos";
 
 const PAGE_SIZE = 12;
+const POPULAR_COMBOS_COUNT = 8;
 
 const JOB_TYPE_LABELS: Record<string, string> = {
   full_time: "دوام كامل",
@@ -46,6 +49,8 @@ export default function JobsTab() {
   const [govFilter, setGovFilter] = useState("");
   const [jobTypeFilter, setJobTypeFilter] = useState("");
   const [jobLevelFilter, setJobLevelFilter] = useState("");
+
+  const [popularCombos, setPopularCombos] = useState<JobCombo[]>([]);
 
   const [myApplications, setMyApplications] = useState<Map<string, ApplicationStatus>>(new Map());
   const [savedJobs, setSavedJobs] = useState<Set<string>>(new Set());
@@ -131,6 +136,12 @@ export default function JobsTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [specSelect, govFilter, jobTypeFilter, jobLevelFilter]);
 
+  useEffect(() => {
+    getActiveJobsSeoData()
+      .then((data) => setPopularCombos(data.combos.slice(0, POPULAR_COMBOS_COUNT)))
+      .catch((err) => console.error("Popular combos fetch failed", err));
+  }, []);
+
   async function handleLoadMore() {
     setLoadingMore(true);
     await fetchJobs(false);
@@ -196,6 +207,8 @@ export default function JobsTab() {
 
   return (
     <div dir="rtl">
+      <div className="jobs-tab-layout">
+        <div className="jobs-tab-main">
       {/* الفلاتر */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}>
         <div>
@@ -304,6 +317,17 @@ export default function JobsTab() {
           )}
         </>
       )}
+        </div>
+
+        {popularCombos.length > 0 && (
+          <details className="jobs-tab-sidebar" open>
+            <summary style={{ cursor: "pointer", fontSize: 15, fontWeight: 700, color: "#14213D", marginBottom: 10 }}>
+              تصفح حسب المحافظة والتخصص
+            </summary>
+            <BrowseByCombos combos={popularCombos} variant="list" />
+          </details>
+        )}
+      </div>
 
       {/* مودال تفاصيل الوظيفة */}
       {selectedJob && (

@@ -47,6 +47,40 @@ a {
   color: inherit;
 }
 
+/* تخطيط تاب الوظائف عند الباحث (JobsTab): عمود رئيسي + عمود جانبي "تصفح حسب" لاصق أثناء
+   السكرول على الشاشات الكبيرة. order:-1 بيخلي العمود الجانبي يبان الأول (يمين في RTL)،
+   وعلى الموبايل بيترتب بعد المحتوى الرئيسي بدل ما يسبقه. */
+.jobs-tab-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.jobs-tab-main {
+  flex: 3 1 400px;
+  min-width: 0;
+}
+
+.jobs-tab-sidebar {
+  flex: 1 1 240px;
+  max-width: 280px;
+  position: sticky;
+  top: 20px;
+  order: -1;
+}
+
+@media (max-width: 860px) {
+  .jobs-tab-layout {
+    flex-direction: column;
+  }
+  .jobs-tab-sidebar {
+    position: static;
+    max-width: 100%;
+    width: 100%;
+    order: 0;
+  }
+}
+
 /* عرض السيرة الذاتية القابلة للطباعة (ProfileTab) — بيظهر بس وقت الطباعة الفعلية */
 @media print {
   body * {
