@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import NotificationBell from "./NotificationBell";
 import LogoMark from "./LogoMark";
@@ -21,7 +21,15 @@ export default function Navbar() {
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let unsubscribeUserDoc: (() => void) | null = null;
+    let unsubscribeEmployerDoc: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      unsubscribeUserDoc?.();
+      unsubscribeUserDoc = null;
+      unsubscribeEmployerDoc?.();
+      unsubscribeEmployerDoc = null;
+
       if (!user) {
         setSignedIn(false);
         setUserType(null);
@@ -33,22 +41,44 @@ export default function Navbar() {
       setUserLabel(user.displayName || user.email || user.phoneNumber || "");
       setIsAdmin(ADMIN_EMAILS.includes(user.email || ""));
 
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      const type = userDoc.exists() ? userDoc.data().userType || null : null;
-      setUserType(type);
+      // onSnapshot بدل getDoc (قراءة لمرة واحدة) — أول تسجيل دخول بيكتب users/{uid} من
+      // routeAfterAuth في page.tsx بالتوازي مع الاستماع ده، ولو الهيدر قرا قبل ما الكتابة
+      // تخلص كان بيتجمّد على النتيجة القديمة (أو الفاضية) لحد ما حد يعمل ريفريش يدوي —
+      // بالـonSnapshot أي تحديث لاحق للمستند بيوصل الهيدر أوتوماتيك من غير ريفريش خالص.
+      unsubscribeUserDoc = onSnapshot(
+        doc(db, "users", user.uid),
+        (userDoc) => {
+          const type = userDoc.exists() ? userDoc.data().userType || null : null;
+          setUserType(type);
 
-      if (type === "employer") {
-        try {
-          const employerDoc = await getDoc(doc(db, "employers", user.uid));
-          setEmployerPlan(employerDoc.exists() ? employerDoc.data().plan || "free" : "free");
-        } catch (err) {
-          console.error("[Navbar] فشل قراءة employers/{uid} لمعرفة الباقة", err);
+          unsubscribeEmployerDoc?.();
+          unsubscribeEmployerDoc = null;
+
+          if (type === "employer") {
+            unsubscribeEmployerDoc = onSnapshot(
+              doc(db, "employers", user.uid),
+              (employerDoc) => {
+                setEmployerPlan(employerDoc.exists() ? employerDoc.data().plan || "free" : "free");
+              },
+              (err) => {
+                console.error("[Navbar] فشل قراءة employers/{uid} لمعرفة الباقة", err);
+              }
+            );
+          } else {
+            setEmployerPlan(null);
+          }
+        },
+        (err) => {
+          console.error("[Navbar] فشل قراءة users/{uid} لمعرفة نوع الحساب", err);
         }
-      } else {
-        setEmployerPlan(null);
-      }
+      );
     });
-    return () => unsubscribe();
+
+    return () => {
+      unsubscribeAuth();
+      unsubscribeUserDoc?.();
+      unsubscribeEmployerDoc?.();
+    };
   }, []);
 
   async function handleSignOut() {
