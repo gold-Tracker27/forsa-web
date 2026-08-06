@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
   signInWithRedirect,
@@ -44,6 +45,7 @@ const linkBtnStyle: React.CSSProperties = {
 
 export default function LandingPage() {
   const router = useRouter();
+  const [checkingSession, setCheckingSession] = useState(true);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [emailPanelOpen, setEmailPanelOpen] = useState(false);
   const [pendingRole, setPendingRole] = useState<Role | null>(null);
@@ -83,6 +85,29 @@ export default function LandingPage() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // لو المستخدم مسجل دخول بالفعل وفتح "/"، ميشوفش شاشة اختيار الحساب/تسجيل الدخول تاني —
+  // كانت بتفضل تتعرض حتى لجلسة شغالة فعليًا، وده بيحس المستخدم إنه اتسجّل خروج رغم إن جلسته
+  // لسه فعلية (الـNavbar فوق بيفضل شغال عادي، المشكلة كانت في محتوى الصفحة بس). بنستثني حالة
+  // العودة من Google redirect (فيه PENDING_ROLE_STORAGE_KEY) عشان نسيب الـuseEffect اللي فوق
+  // يكمّل هو التسجيل ويعمل التوجيه بنفسه، من غير سباق بين الاتنين.
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user || localStorage.getItem(PENDING_ROLE_STORAGE_KEY)) {
+        setCheckingSession(false);
+        return;
+      }
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const type = userDoc.exists() ? userDoc.data().userType : null;
+        router.replace(type === "employer" ? "/employer" : "/seeker");
+      } catch (err) {
+        console.error("[LandingPage] فشل التحقق من جلسة المستخدم الحالية", err);
+        setCheckingSession(false);
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
 
   async function routeAfterAuth(role: Role) {
     const user = auth.currentUser;
@@ -305,6 +330,14 @@ export default function LandingPage() {
       setError(phoneAuthErrorMessage(err));
     }
     setPhoneLoading(false);
+  }
+
+  if (checkingSession) {
+    return (
+      <div dir="rtl" style={{ textAlign: "center", padding: 60 }}>
+        <p>جاري التحميل...</p>
+      </div>
+    );
   }
 
   return (
