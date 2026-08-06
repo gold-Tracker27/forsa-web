@@ -68,7 +68,7 @@ export default async function CompaniesPage() {
   const companies = await getCompanies();
 
   return (
-    <div dir="rtl" style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px" }}>
+    <div dir="rtl" style={{ maxWidth: 1200, width: "100%", margin: "0 auto", padding: "40px 20px" }}>
       <h1 style={{ fontSize: 26, marginBottom: 6 }}>الشركات</h1>
       <p style={{ color: "#4A5568", marginBottom: 24 }}>
         {companies.length} شركة بتوظف حاليًا على منصة الشغل
@@ -80,7 +80,7 @@ export default async function CompaniesPage() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
         {companies.map((c) => (
           <Link
             key={c.employerId}
