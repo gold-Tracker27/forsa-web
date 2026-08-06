@@ -7,6 +7,13 @@ export const metadata = {
   description: "تصفح الشركات اللي بتوظف حاليًا على منصة الشغل، وشوف كل وظائفها المفتوحة في مكان واحد.",
 };
 
+// الصفحة دي مالهاش أي dynamic segment، فـNext.js كان بيعملها static prerender وقت الـbuild
+// ويسيبها في كاش ISR (لاحظنا x-nextjs-stale-time:300 وx-vercel-cache:HIT فعليًا على الموقع
+// الحي) — يعني عدد الوظائف المعروض ممكن يفضل قديم لحد 5 دقايق (أو أكتر لحد أول زيارة بعدها)
+// حتى لو حساب العدد نفسه لايف وصحيح 100%. force-dynamic بيضمن قراءة فريش من Firestore
+// في كل طلب.
+export const dynamic = "force-dynamic";
+
 type CompanyCard = {
   employerId: string;
   companyName: string;
