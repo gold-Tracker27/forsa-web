@@ -140,6 +140,7 @@ export default function PersonalInfoTab({ initialData, onSaved, isNewProfile }: 
           {photoURL && !photoFile && (
             <img src={photoURL} alt="صورتك الحالية" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: "50%", marginBottom: 8, display: "block" }} />
           )}
+          <div style={{ fontWeight: 700, fontSize: 13.5, color: "#14213D", marginBottom: 4 }}>📷 اختيار صورة</div>
           <input type="file" accept="image/*" onChange={(e) => setPhotoFile(e.target.files?.[0] || null)} />
           <div style={{ fontSize: 12.5, color: "#4A5568", marginTop: 6 }}>
             {photoStatus || "صورة PNG أو JPG، حد أقصى 2 ميجا"}

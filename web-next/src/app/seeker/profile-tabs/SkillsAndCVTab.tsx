@@ -90,6 +90,7 @@ export default function SkillsAndCVTab({ initialData, onSaved, isNewProfile }: P
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={labelStyle}>السيرة الذاتية (CV)</label>
+        <div style={{ fontWeight: 700, fontSize: 13.5, color: "#14213D", marginBottom: 4 }}>📎 اختيار ملف</div>
         <input type="file" accept="application/pdf" onChange={(e) => setCvFile(e.target.files?.[0] || null)} />
         <div style={{ fontSize: 12.5, color: "#4A5568", marginTop: 6 }}>
           {cvStatus || "ارفع ملف PDF (حد أقصى 5 ميجا). لو رفعت ملف، هيتجاهل الرابط تحت لو موجود."}
