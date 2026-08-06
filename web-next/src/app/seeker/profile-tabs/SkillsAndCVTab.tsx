@@ -7,6 +7,7 @@ import { auth, db, storage } from "@/lib/firebase";
 import { SKILL_OPTIONS, LANGUAGE_OPTIONS, SKILL_LEVELS, LANGUAGE_LEVELS } from "@/lib/constants";
 import { SkillEntry, normalizeEntries } from "@/lib/profileFields";
 import SkillLevelPicker from "../SkillLevelPicker";
+import FileUploadButton from "@/components/FileUploadButton";
 import { h3Style, descStyle, labelStyle, inputStyle, saveBtnStyle, savedMsgStyle } from "./sharedStyles";
 
 type Props = {
@@ -90,8 +91,12 @@ export default function SkillsAndCVTab({ initialData, onSaved, isNewProfile }: P
       </div>
       <div style={{ marginBottom: 14 }}>
         <label style={labelStyle}>السيرة الذاتية (CV)</label>
-        <div style={{ fontWeight: 700, fontSize: 13.5, color: "#14213D", marginBottom: 4 }}>📎 اختيار ملف</div>
-        <input type="file" accept="application/pdf" onChange={(e) => setCvFile(e.target.files?.[0] || null)} />
+        <FileUploadButton
+          label="📎 اختيار ملف"
+          accept="application/pdf"
+          fileName={cvFile?.name}
+          onChange={setCvFile}
+        />
         <div style={{ fontSize: 12.5, color: "#4A5568", marginTop: 6 }}>
           {cvStatus || "ارفع ملف PDF (حد أقصى 5 ميجا). لو رفعت ملف، هيتجاهل الرابط تحت لو موجود."}
         </div>

@@ -5,6 +5,7 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth, db, storage } from "@/lib/firebase";
 import { GOVERNORATES, GOVERNORATE_CITIES } from "@/lib/constants";
+import FileUploadButton from "@/components/FileUploadButton";
 
 type Props = {
   initialData?: any;
@@ -123,8 +124,12 @@ export default function EmployerOnboardingForm({ initialData, onSaved }: Props) 
 
           <div style={{ gridColumn: "1 / -1" }}>
             <label style={labelStyle}>لوجو الشركة (اختياري)</label>
-            <div style={{ fontWeight: 700, fontSize: 13.5, color: "#14213D", marginBottom: 4 }}>📷 اختيار صورة</div>
-            <input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files?.[0] || null)} />
+            <FileUploadButton
+              label="📷 اختيار صورة"
+              accept="image/*"
+              fileName={logoFile?.name}
+              onChange={setLogoFile}
+            />
             <div style={{ fontSize: 12.5, color: "#4A5568", marginTop: 6 }}>
               {logoStatus || "صورة PNG أو JPG، حد أقصى 2 ميجا"}
             </div>
