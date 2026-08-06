@@ -7,6 +7,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import NotificationBell from "./NotificationBell";
+import LogoMark from "./LogoMark";
 
 const ADMIN_EMAILS = ["elshoghl27@gmail.com", "mohamedzakaria2727@gmail.com"];
 
@@ -17,7 +18,6 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [userLabel, setUserLabel] = useState("");
   const [employerPlan, setEmployerPlan] = useState<string | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
@@ -27,13 +27,11 @@ export default function Navbar() {
         setUserType(null);
         setIsAdmin(false);
         setEmployerPlan(null);
-        setAuthLoading(false);
         return;
       }
       setSignedIn(true);
       setUserLabel(user.displayName || user.email || user.phoneNumber || "");
       setIsAdmin(ADMIN_EMAILS.includes(user.email || ""));
-      setAuthLoading(false);
 
       const userDoc = await getDoc(doc(db, "users", user.uid));
       const type = userDoc.exists() ? userDoc.data().userType || null : null;
@@ -57,11 +55,6 @@ export default function Navbar() {
     await signOut(auth);
     router.push("/");
   }
-
-  // العناصر اللي مش محتاجة نوع الحساب (الشركات، الإشعارات، اسم المستخدم، الخروج) تتعرض
-  // فور تسجيل الدخول، من غير ما تستنى قراءة users/{uid} — عشان الهيدر ميختفيش بالكامل
-  // في اللحظات القليلة قبل ما نوع الحساب يتحدد (ملحوظ أكتر بعد تسريع فورم التسجيل الأول).
-  if (authLoading || !signedIn) return null;
 
   const isPremium = employerPlan === "premium";
 
@@ -90,6 +83,10 @@ export default function Navbar() {
       }}
     >
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <Link href="/" style={brandLinkStyle}>
+          <LogoMark size={32} />
+          <span style={brandTextStyle}>الشغل</span>
+        </Link>
         {showSeekerItems && (
           <>
             <Link href="/seeker?tab=jobs" style={linkStyle}>🏠 تصفح الوظائف</Link>
@@ -111,16 +108,33 @@ export default function Navbar() {
         )}
         <Link href="/companies" style={linkStyle}>🏛️ الشركات</Link>
         {showAdminLink && <Link href="/admin" style={linkStyle}>📊 لوحة الإدارة</Link>}
-        <NotificationBell />
+        {signedIn && <NotificationBell />}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 13, color: "#4A5568" }}>{userLabel}</span>
-        <button onClick={handleSignOut} style={signOutStyle}>خروج</button>
-      </div>
+      {signedIn && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, color: "#4A5568" }}>{userLabel}</span>
+          <button onClick={handleSignOut} style={signOutStyle}>خروج</button>
+        </div>
+      )}
     </nav>
   );
 }
+
+const brandLinkStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  textDecoration: "none",
+  marginLeft: 6,
+};
+
+const brandTextStyle: React.CSSProperties = {
+  fontFamily: "var(--font-cairo)",
+  fontSize: 17,
+  fontWeight: 800,
+  color: "#14213D",
+};
 
 export const linkStyle: React.CSSProperties = {
   padding: "6px 14px",
