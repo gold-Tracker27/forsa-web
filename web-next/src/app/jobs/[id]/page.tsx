@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
   const title = `${job.title} - وظيفة على منصة الشغل`;
   const description = `${job.title} في ${job.city} - ${job.governorate}. ${(job.description || "").slice(0, 120)}`;
-  const companyName = job.showCompanyName && job.companyName ? job.companyName : "شركة سرية";
+  const companyName = job.showCompanyName && job.companyName ? job.companyName : "شركة غير معلنة";
   const ogTitle = `${job.title} - ${companyName}`;
   const url = `https://elshoghl.com/jobs/${job.id}`;
   // OG_IMAGE هنا مبدئي (نفس لوجو الموقع العام) — المرحلة الجاية: صورة مولّدة لكل وظيفة
