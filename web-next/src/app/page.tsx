@@ -385,6 +385,8 @@ export default function LandingPage() {
             <RoleOptionCard
               onClick={() => selectRole("job_seeker")}
               background={COLORS.ink}
+              tintBackground="rgba(20,33,61,0.07)"
+              tintColor={COLORS.ink}
               icon="🔍"
               title="باحث عن شغل"
               tagline="بتدوّر على فرصة شغل تناسبك؟ سجّل مجانًا بالكامل وهتقدر:"
@@ -399,6 +401,8 @@ export default function LandingPage() {
             <RoleOptionCard
               onClick={() => selectRole("employer")}
               background="#C97F1F"
+              tintBackground="rgba(232,163,61,0.18)"
+              tintColor="#8A570D"
               icon="🏢"
               title="صاحب عمل أو شركة"
               tagline="بتدوّر على كوادر وموظفين لشركتك؟ انشر مجانًا وهتقدر:"
@@ -726,6 +730,8 @@ export default function LandingPage() {
 function RoleOptionCard({
   onClick,
   background,
+  tintBackground,
+  tintColor,
   icon,
   title,
   tagline,
@@ -733,40 +739,58 @@ function RoleOptionCard({
 }: {
   onClick: () => void;
   background: string;
+  tintBackground: string;
+  tintColor: string;
   icon: string;
   title: string;
   tagline: string;
   bullets: string[];
 }) {
   return (
-    <button
-      onClick={onClick}
-      style={{
-        width: "100%",
-        textAlign: "right",
-        background,
-        color: "#fff",
-        border: "none",
-        borderRadius: 12,
-        padding: "20px 22px",
-        cursor: "pointer",
-        fontFamily: "inherit",
-        display: "block",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+    <div onClick={onClick} style={{ cursor: "pointer" }}>
+      {/* البوكس العلوي: الاختيار نفسه (أيقونة + اسم الدور) */}
+      <button
+        onClick={onClick}
+        style={{
+          width: "100%",
+          textAlign: "center",
+          background,
+          color: "#fff",
+          border: "none",
+          borderRadius: 12,
+          padding: "18px 22px",
+          cursor: "pointer",
+          fontFamily: "inherit",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 10,
+        }}
+      >
         <span style={{ fontSize: 26 }}>{icon}</span>
         <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-cairo)" }}>{title}</span>
+      </button>
+
+      {/* البوكس السفلي: وصفي بس (الجملة التعريفية + المزايا) — منفصل بصريًا بمسافة ولون أفتح */}
+      <div
+        style={{
+          marginTop: 8,
+          background: tintBackground,
+          color: tintColor,
+          borderRadius: 12,
+          padding: "16px 20px",
+        }}
+      >
+        <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 10, lineHeight: 1.6 }}>{tagline}</div>
+        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
+          {bullets.map((b, i) => (
+            <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 13, lineHeight: 1.5, fontWeight: 400 }}>
+              <span aria-hidden="true">✓</span>
+              <span>{b}</span>
+            </li>
+          ))}
+        </ul>
       </div>
-      <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 10, lineHeight: 1.6 }}>{tagline}</div>
-      <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
-        {bullets.map((b, i) => (
-          <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 13, lineHeight: 1.5, fontWeight: 400 }}>
-            <span aria-hidden="true">✓</span>
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
-    </button>
+    </div>
   );
 }
