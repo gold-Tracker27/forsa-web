@@ -342,35 +342,37 @@ export default function LandingPage() {
 
   return (
     <div dir="rtl" style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px" }}>
-      <div style={{ textAlign: "center", marginBottom: 40 }}>
-        <span
-          style={{
-            fontSize: 13,
-            color: COLORS.inkSoft,
-            display: "block",
-            marginBottom: 10,
-          }}
-        >
-          منصة توظيف مصرية · واستشارات موارد بشرية
-        </span>
-        <h1 style={{ fontSize: 32, color: COLORS.ink, marginBottom: 12 }}>
-          فرصتك الجاية... <span style={{ color: COLORS.stamp }}>موجودة هنا</span>
-        </h1>
-        <div
-          style={{
-            display: "inline-block",
-            background: "rgba(47,111,78,0.12)",
-            color: COLORS.success,
-            fontWeight: 700,
-            fontSize: 14,
-            padding: "8px 16px",
-            borderRadius: 999,
-            marginTop: 12,
-          }}
-        >
-          🎉 التسجيل على المنصة مجاني ١٠٠٪ للجميع — سواء كنت بتدوّر على شغل أو بتدوّر على كوادر لشركتك
+      {!selectedRole && (
+        <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <span
+            style={{
+              fontSize: 13,
+              color: COLORS.inkSoft,
+              display: "block",
+              marginBottom: 10,
+            }}
+          >
+            منصة توظيف مصرية · واستشارات موارد بشرية
+          </span>
+          <h1 style={{ fontSize: 32, color: COLORS.ink, marginBottom: 12 }}>
+            فرصتك الجاية... <span style={{ color: COLORS.stamp }}>موجودة هنا</span>
+          </h1>
+          <div
+            style={{
+              display: "inline-block",
+              background: "rgba(47,111,78,0.12)",
+              color: COLORS.success,
+              fontWeight: 700,
+              fontSize: 14,
+              padding: "8px 16px",
+              borderRadius: 999,
+              marginTop: 12,
+            }}
+          >
+            🎉 التسجيل على المنصة مجاني ١٠٠٪ للجميع — سواء كنت بتدوّر على شغل أو بتدوّر على كوادر لشركتك
+          </div>
         </div>
-      </div>
+      )}
 
       {!selectedRole ? (
         <>
@@ -423,92 +425,66 @@ export default function LandingPage() {
             style={{
               background: "none",
               border: "none",
-              fontSize: 13.5,
+              fontSize: 13,
               fontWeight: 700,
               color: COLORS.inkSoft,
               cursor: "pointer",
-              marginBottom: 14,
+              marginBottom: 16,
               padding: 0,
+              display: "block",
             }}
           >
-            → رجوع / تغيير الاختيار
+            → رجوع
           </button>
 
-          <div
+          <button
+            onClick={backToRoleChoice}
             style={{
-              border: `1px solid ${COLORS.ink}22`,
-              borderRadius: 12,
-              padding: 24,
-              background: "#fff",
-              display: "flex",
-              flexDirection: "column",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              background: selectedRole === "job_seeker" ? "rgba(20,33,61,0.08)" : "rgba(201,127,31,0.14)",
+              color: selectedRole === "job_seeker" ? COLORS.ink : "#8A570D",
+              border: "none",
+              borderRadius: 999,
+              padding: "6px 14px",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              marginBottom: 22,
+              fontFamily: "inherit",
             }}
           >
-            {selectedRole === "job_seeker" ? (
-              <>
-                <div style={{ fontWeight: 700, color: COLORS.stamp, fontSize: 13, marginBottom: 10 }}>
-                  باحث عن شغل
-                </div>
-                <h3 style={{ fontSize: 20, marginBottom: 10 }}>🔍 سجّل بياناتك</h3>
-                <p style={{ color: COLORS.inkSoft, fontSize: 14, marginBottom: 16 }}>
-                  املا بروفايلك مرة، واظهر لكل أصحاب الأعمال اللي بيدوروا على حد زيك. مجاني تمامًا.
-                </p>
-              </>
-            ) : (
-              <>
-                <div style={{ fontWeight: 700, color: COLORS.stamp, fontSize: 13, marginBottom: 10 }}>
-                  صاحب عمل
-                </div>
-                <h3 style={{ fontSize: 20, marginBottom: 10 }}>🏢 دوّر على كوادر</h3>
-                <p style={{ color: COLORS.inkSoft, fontSize: 14, marginBottom: 16 }}>
-                  افلتر على التخصص والمدينة والخبرة، ووصل لمرشحين مناسبين لشركتك فورًا.
-                </p>
-                <div
-                  style={{
-                    display: "inline-block",
-                    background: "rgba(47,111,78,0.12)",
-                    color: COLORS.success,
-                    fontWeight: 700,
-                    fontSize: 13,
-                    padding: "6px 14px",
-                    borderRadius: 999,
-                    marginBottom: 14,
-                  }}
-                >
-                  ✓ باقة مجانية: 5 إعلانات وظائف شهريًا ببلاش
-                </div>
-              </>
-            )}
+            {selectedRole === "job_seeker" ? "🔍 باحث عن شغل" : "🏢 صاحب عمل أو شركة"}
+          </button>
 
-            <button
+          <h2 style={{ fontSize: 22, color: COLORS.ink, marginBottom: 6, fontFamily: "var(--font-cairo)" }}>
+            سجّل دخولك في أقل من دقيقة
+          </h2>
+          <p style={{ color: COLORS.inkSoft, fontSize: 14, marginBottom: 24 }}>
+            مجاني بالكامل، بدون أي رسوم
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <AuthOptionButton
               onClick={() => handleGoogleSignIn(selectedRole)}
               disabled={loading}
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                background: COLORS.ink,
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              الدخول بحساب Google
-            </button>
-            <div style={{ marginTop: 10, textAlign: "center" }}>
-              <button onClick={() => openEmailAuth(selectedRole)} style={linkBtnStyle}>
-                أو سجّل بالإيميل
-              </button>
-            </div>
-            <div style={{ marginTop: 10, textAlign: "center" }}>
-              <div style={{ fontSize: 11.5, color: COLORS.inkSoft, marginBottom: 4 }}>
-                💡 التسجيل بالإيميل أو Google أسرع وبيوصلّك بيه إشعارات بكل جديد يخص وظائفك
-              </div>
-              <button onClick={() => openPhoneAuth(selectedRole)} style={linkBtnStyle}>
-                أو ادخل برقم التليفون
-              </button>
-            </div>
+              icon={<GoogleIcon />}
+              label="الدخول بحساب Google"
+              accentColor={selectedRole === "job_seeker" ? COLORS.ink : "#C97F1F"}
+            />
+            <AuthOptionButton
+              onClick={() => openEmailAuth(selectedRole)}
+              icon="✉️"
+              label="الدخول بالإيميل"
+              accentColor={selectedRole === "job_seeker" ? COLORS.ink : "#C97F1F"}
+            />
+            <AuthOptionButton
+              onClick={() => openPhoneAuth(selectedRole)}
+              icon="📱"
+              label="الدخول برقم التليفون"
+              accentColor={selectedRole === "job_seeker" ? COLORS.ink : "#C97F1F"}
+            />
           </div>
         </div>
       )}
@@ -721,6 +697,60 @@ export default function LandingPage() {
 
       <div id="recaptcha-container" />
     </div>
+  );
+}
+
+// الثلاثة خيارات (Google/إيميل/تليفون) لازم يبقوا بنفس الوزن البصري بالظبط — نفس المكوّن
+// لتلاتتهم، مفيش خيار "أساسي" أكبر من التاني
+function AuthOptionButton({
+  onClick,
+  disabled,
+  icon,
+  label,
+  accentColor,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  icon: React.ReactNode;
+  label: string;
+  accentColor: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "14px 18px",
+        background: "#fff",
+        border: `1.5px solid ${accentColor}33`,
+        borderRadius: 10,
+        fontSize: 15,
+        fontWeight: 700,
+        color: COLORS.ink,
+        cursor: disabled ? "wait" : "pointer",
+        fontFamily: "inherit",
+      }}
+    >
+      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, flexShrink: 0 }}>
+        {icon}
+      </span>
+      {label}
+    </button>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.5 26.7 36 24 36c-5.3 0-9.6-3.4-11.3-8.1l-6.5 5C9.6 39.6 16.3 44 24 44z" />
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.6l6.2 5.2C39.9 36.6 44 30.9 44 24c0-1.3-.1-2.7-.4-3.5z" />
+    </svg>
   );
 }
 
