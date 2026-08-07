@@ -463,6 +463,35 @@ async function createNotification({ userId, type, message, link }) {
   }
 }
 
+// نفس createNotification بس بـbatch write واحد بدل .add() منفصل لكل إشعار — مهم لما العدد
+// كبير (زي إشعار وظيفة جديدة لكل الباحثين المطابقين لتخصص معيّن دفعة واحدة). بيقسّم لدفعات
+// 450 عشان حد الـ500 عملية لكل batch في Firestore.
+async function createNotificationsBatch(notifications, logPrefix) {
+  if (notifications.length === 0) return;
+  const db = getFirestore();
+  const CHUNK_SIZE = 450;
+  for (let i = 0; i < notifications.length; i += CHUNK_SIZE) {
+    const chunk = notifications.slice(i, i + CHUNK_SIZE);
+    try {
+      const batch = db.batch();
+      chunk.forEach((n) => {
+        const ref = db.collection("notifications").doc();
+        batch.set(ref, {
+          userId: n.userId,
+          type: n.type,
+          message: n.message,
+          link: n.link,
+          read: false,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+      });
+      await batch.commit();
+    } catch (err) {
+      logger.error(`${logPrefix || "createNotificationsBatch"}: فشل batch commit لـ${chunk.length} إشعار`, err);
+    }
+  }
+}
+
 exports.onNewInvitation = onDocumentCreated(
   { document: "invitations/{invitationId}", secrets: [RESEND_API_KEY] },
   async (event) => {
@@ -847,3 +876,137 @@ exports.unsubscribeSeekerEmails = onRequest(async (req, res) => {
     res.status(500).send(unsubscribePageHtml({ success: false, message: "حصلت مشكلة، حاول تاني لاحقًا." }));
   }
 });
+
+// إشعار فوري داخل الجرس لكل باحث تخصصه بيطابق وظيفة جديدة اتنشرت — نفس منطق المطابقة
+// المستخدم في weeklySeekerDigest (تخصص + محافظة لو الباحث محدد واحدة)، بس هنا فوري لحظة
+// النشر مش أسبوعي. query واحد بس لكل الباحثين المطابقين للتخصص (مش query منفصل لكل باحث)،
+// وbatch write واحد لكل الإشعارات دفعة واحدة.
+exports.onNewJobPostMatchSeekers = onDocumentCreated(
+  { document: "job_posts/{jobPostId}" },
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+
+    const job = snap.data();
+    const jobPostId = event.params.jobPostId;
+    if (job.isActive !== true || !job.specialization) return;
+
+    const db = getFirestore();
+    let seekersSnap;
+    try {
+      seekersSnap = await db.collection("job_seekers").where("specialization", "==", job.specialization).get();
+    } catch (err) {
+      logger.error(`onNewJobPostMatchSeekers: فشل جلب الباحثين المطابقين لوظيفة ${jobPostId}`, err);
+      return;
+    }
+    if (seekersSnap.empty) return;
+
+    // محافظة الباحث لو محددة لازم تطابق محافظة الوظيفة (زي weeklySeekerDigest بالظبط) —
+    // لو الباحث مش محدد محافظة، بيتضمن بغض النظر عن محافظة الوظيفة
+    const matchingSeekerIds = seekersSnap.docs
+      .filter((d) => {
+        const s = d.data();
+        return !s.governorate || s.governorate === job.governorate;
+      })
+      .map((d) => d.id);
+    if (matchingSeekerIds.length === 0) return;
+
+    const jobTitle = job.title || "وظيفة";
+    const notifications = matchingSeekerIds.map((userId) => ({
+      userId,
+      type: "matching_job",
+      message: `وظيفة جديدة تناسب تخصصك: "${jobTitle}"`,
+      link: `/jobs/${jobPostId}`,
+    }));
+
+    await createNotificationsBatch(notifications, "onNewJobPostMatchSeekers");
+    logger.info(`onNewJobPostMatchSeekers: اتبعت ${notifications.length} إشعار لوظيفة ${jobPostId}`);
+  }
+);
+
+// تذكير يومي لأي وظيفة محفوظة (saved_jobs) باقيلها 3 أيام أو أقل على الإغلاق — مرة واحدة بس
+// لكل وظيفة محفوظة (reminderSent على مستند saved_jobs نفسه) عشان ميتكررش كل يوم لنفس الوظيفة
+exports.savedJobExpiryReminders = onSchedule(
+  { schedule: "0 9 * * *", timeZone: "Africa/Cairo" },
+  async () => {
+    const db = getFirestore();
+
+    let savedSnap;
+    try {
+      savedSnap = await db.collection("saved_jobs").get();
+    } catch (err) {
+      logger.error("savedJobExpiryReminders: فشل جلب saved_jobs", err);
+      return;
+    }
+    if (savedSnap.empty) return;
+
+    const now = Date.now();
+    const jobCache = new Map(); // jobPostId -> بيانات الوظيفة أو null
+
+    async function getJob(jobPostId) {
+      if (jobCache.has(jobPostId)) return jobCache.get(jobPostId);
+      let data = null;
+      try {
+        const jobSnap = await db.collection("job_posts").doc(jobPostId).get();
+        if (jobSnap.exists) data = jobSnap.data();
+      } catch (err) {
+        logger.error(`savedJobExpiryReminders: فشل جلب job_posts/${jobPostId}`, err);
+      }
+      jobCache.set(jobPostId, data);
+      return data;
+    }
+
+    // مطابق تمامًا لحساب "باقي X يوم" المستخدم في لوحة صاحب العمل (CompanyTab.tsx)
+    const matches = [];
+    for (const docSnap of savedSnap.docs) {
+      const data = docSnap.data();
+      if (data.reminderSent === true) continue;
+      if (!data.jobPostId || !data.seekerId) continue;
+
+      const job = await getJob(data.jobPostId);
+      if (!job || job.isActive !== true || !job.expiresAt) continue;
+
+      const daysLeft = Math.ceil((job.expiresAt.toMillis() - now) / 86400000);
+      if (daysLeft > 3 || daysLeft < 0) continue;
+
+      matches.push({
+        ref: docSnap.ref,
+        seekerId: data.seekerId,
+        message: `وظيفة محفوظة عندك هتقفل قريبًا: "${job.title || "وظيفة"}"`,
+        link: `/jobs/${data.jobPostId}`,
+      });
+    }
+
+    if (matches.length === 0) {
+      logger.info("savedJobExpiryReminders: مفيش وظائف محفوظة قربت تقفل النهاردة");
+      return;
+    }
+
+    // batch واحد بيعمل الإشعار + يعلّم reminderSent مع بعض، عشان لو الإشعار اتبعت والتعليم
+    // فشل (أو العكس) منقعش في حالة نص متسقة — الاتنين بيحصلوا مع بعض أو محدش منهم
+    const CHUNK_SIZE = 225; // 225 عنصر × عمليتين (إشعار + تحديث) = 450 عملية لكل batch
+    for (let i = 0; i < matches.length; i += CHUNK_SIZE) {
+      const chunk = matches.slice(i, i + CHUNK_SIZE);
+      try {
+        const batch = db.batch();
+        chunk.forEach((m) => {
+          const notifRef = db.collection("notifications").doc();
+          batch.set(notifRef, {
+            userId: m.seekerId,
+            type: "saved_job_expiring",
+            message: m.message,
+            link: m.link,
+            read: false,
+            createdAt: FieldValue.serverTimestamp(),
+          });
+          batch.update(m.ref, { reminderSent: true });
+        });
+        await batch.commit();
+      } catch (err) {
+        logger.error(`savedJobExpiryReminders: فشل batch commit لـ${chunk.length} تذكير`, err);
+      }
+    }
+
+    logger.info(`savedJobExpiryReminders: اتبعت ${matches.length} تذكير`);
+  }
+);
