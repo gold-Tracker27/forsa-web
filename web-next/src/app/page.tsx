@@ -61,6 +61,11 @@ export default function LandingPage() {
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+  // true من لحظة ما أي محاولة تسجيل دخول جديدة (Google popup/redirect، إيميل، تليفون) تبدأ
+  // لحد ما routeAfterAuth بتاعتها يخلص أو تفشل — عشان useEffect "لو مسجل دخول بالفعل" تحت
+  // ميعملش توجيه مستقل بيسابق routeAfterAuth على نفس القرار. routeAfterAuth هو المصدر
+  // الوحيد المسؤول عن التوجيه بعد أي عملية تسجيل دخول جديدة فعليًا.
+  const authInProgressRef = useRef(false);
 
   // لما signInWithPopup يفشل (شائع جوه WebView بتاع تطبيقات السوشيال ميديا) بنعمل fallback
   // لـsignInWithRedirect، اللي بيودّي المستخدم لجوجل وبيرجّعه لنفس الصفحة بعد ما يسجّل دخول —
@@ -93,7 +98,7 @@ export default function LandingPage() {
   // يكمّل هو التسجيل ويعمل التوجيه بنفسه، من غير سباق بين الاتنين.
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user || localStorage.getItem(PENDING_ROLE_STORAGE_KEY)) {
+      if (!user || localStorage.getItem(PENDING_ROLE_STORAGE_KEY) || authInProgressRef.current) {
         setCheckingSession(false);
         return;
       }
@@ -146,20 +151,25 @@ export default function LandingPage() {
     setError("");
     setPendingRole(role);
     setLoading(true);
+    authInProgressRef.current = true;
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
       await routeAfterAuth(role);
+      authInProgressRef.current = false;
     } catch (err: any) {
       console.warn("popup failed, falling back to redirect", err);
       logClientError("google_popup_signin", err);
       try {
         localStorage.setItem(PENDING_ROLE_STORAGE_KEY, role);
         await signInWithRedirect(auth, provider);
+        // لو نجحت، المتصفح هيتنقل فعليًا لجوجل بره الصفحة دي — مفيش داعي نصفّر الـref هنا،
+        // هيترجع false تلقائيًا لأن الصفحة هتتحمّل من جديد لما المستخدم يرجع
       } catch (err2: any) {
         console.error("Google redirect fallback failed", err2);
         logClientError("google_redirect_signin", err2);
         localStorage.removeItem(PENDING_ROLE_STORAGE_KEY);
+        authInProgressRef.current = false;
         setError("حصلت مشكلة في تسجيل الدخول بجوجل، جرب طريقة تانية (إيميل أو تليفون)");
         setLoading(false);
       }
@@ -197,6 +207,7 @@ export default function LandingPage() {
     if (!pendingRole) return;
     setError("");
     setErrorColor(COLORS.stamp);
+    authInProgressRef.current = true;
     try {
       await createUserWithEmailAndPassword(auth, email.trim(), password);
       closeEmailAuth();
@@ -205,6 +216,8 @@ export default function LandingPage() {
       console.error("Email sign up failed", err);
       logClientError("email_signup", err);
       setError(emailAuthErrorMessage(err));
+    } finally {
+      authInProgressRef.current = false;
     }
   }
 
@@ -212,6 +225,7 @@ export default function LandingPage() {
     if (!pendingRole) return;
     setError("");
     setErrorColor(COLORS.stamp);
+    authInProgressRef.current = true;
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       closeEmailAuth();
@@ -220,6 +234,8 @@ export default function LandingPage() {
       console.error("Email login failed", err);
       logClientError("email_login", err);
       setError(emailAuthErrorMessage(err));
+    } finally {
+      authInProgressRef.current = false;
     }
   }
 
@@ -320,6 +336,7 @@ export default function LandingPage() {
     setError("");
     setErrorColor(COLORS.stamp);
     setPhoneLoading(true);
+    authInProgressRef.current = true;
     try {
       await confirmationResult.confirm(otpCode.trim());
       closePhoneAuth();
@@ -328,6 +345,8 @@ export default function LandingPage() {
       console.error("Verify code failed", err);
       logClientError("phone_verify_code", err);
       setError(phoneAuthErrorMessage(err));
+    } finally {
+      authInProgressRef.current = false;
     }
     setPhoneLoading(false);
   }
