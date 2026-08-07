@@ -381,51 +381,34 @@ export default function LandingPage() {
             إنت مين؟
           </h2>
 
-          <div style={{ display: "flex", flexDirection: "row", flexWrap: "nowrap", gap: 12, maxWidth: 480, margin: "0 auto" }}>
-            <button
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 480, margin: "0 auto" }}>
+            <RoleOptionCard
               onClick={() => selectRole("job_seeker")}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                padding: "28px 12px",
-                background: COLORS.ink,
-                color: "#fff",
-                border: "none",
-                borderRadius: 12,
-                fontWeight: 700,
-                fontSize: 16,
-                cursor: "pointer",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              <span style={{ fontSize: 30 }}>🔍</span>
-              باحث عن شغل
-            </button>
-            <button
+              background={COLORS.ink}
+              icon="🔍"
+              title="باحث عن شغل"
+              tagline="بتدوّر على فرصة شغل تناسبك؟ سجّل مجانًا بالكامل وهتقدر:"
+              bullets={[
+                "تسجّل بياناتك الأساسية بس في دقيقة وتبدأ تصفح فورًا",
+                "تقدّم على أي وظيفة تناسبك بضغطة واحدة",
+                "تطبع سيرتك الذاتية (CV) جاهزة ومنسّقة",
+                "تحفظ الوظائف اللي عاجباك عشان تراجعها بعدين",
+                "يوصلك إيميل أسبوعي بالوظائف الجديدة المطابقة لتخصصك",
+              ]}
+            />
+            <RoleOptionCard
               onClick={() => selectRole("employer")}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                padding: "28px 12px",
-                background: "#C97F1F",
-                color: "#fff",
-                border: "none",
-                borderRadius: 12,
-                fontWeight: 700,
-                fontSize: 16,
-                cursor: "pointer",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              <span style={{ fontSize: 30 }}>🏢</span>
-              صاحب عمل
-            </button>
+              background="#C97F1F"
+              icon="🏢"
+              title="صاحب عمل أو شركة"
+              tagline="بتدوّر على كوادر وموظفين لشركتك؟ انشر مجانًا وهتقدر:"
+              bullets={[
+                "تنشر لحد 5 وظائف شهريًا مجانًا بالكامل، كل وظيفة تفضل نشطة 30 يوم",
+                "تستقبل تقديمات وسير ذاتية من غير أي رسوم",
+                "تعمل بحث متقدم عن الكوادر المناسبة وتدعوهم للتقديم مباشرة",
+                "هيجيلك إيميل يومي فيه ملخص كل المتقدمين على وظايفك",
+              ]}
+            />
           </div>
 
           <p style={{ textAlign: "center", color: COLORS.inkSoft, fontSize: 13, marginTop: 20 }}>
@@ -737,5 +720,53 @@ export default function LandingPage() {
 
       <div id="recaptcha-container" />
     </div>
+  );
+}
+
+function RoleOptionCard({
+  onClick,
+  background,
+  icon,
+  title,
+  tagline,
+  bullets,
+}: {
+  onClick: () => void;
+  background: string;
+  icon: string;
+  title: string;
+  tagline: string;
+  bullets: string[];
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: "100%",
+        textAlign: "right",
+        background,
+        color: "#fff",
+        border: "none",
+        borderRadius: 12,
+        padding: "20px 22px",
+        cursor: "pointer",
+        fontFamily: "inherit",
+        display: "block",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        <span style={{ fontSize: 26 }}>{icon}</span>
+        <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-cairo)" }}>{title}</span>
+      </div>
+      <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 10, lineHeight: 1.6 }}>{tagline}</div>
+      <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
+        {bullets.map((b, i) => (
+          <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 13, lineHeight: 1.5, fontWeight: 400 }}>
+            <span aria-hidden="true">✓</span>
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+    </button>
   );
 }
