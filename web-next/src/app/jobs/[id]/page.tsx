@@ -52,13 +52,32 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (!job) {
     return { title: "وظيفة غير متاحة - الشغل" };
   }
+  const title = `${job.title} - وظيفة على منصة الشغل`;
   const description = `${job.title} في ${job.city} - ${job.governorate}. ${(job.description || "").slice(0, 120)}`;
+  const companyName = job.showCompanyName && job.companyName ? job.companyName : "شركة سرية";
+  const ogTitle = `${job.title} - ${companyName}`;
+  const url = `https://elshoghl.com/jobs/${job.id}`;
+  // OG_IMAGE هنا مبدئي (نفس لوجو الموقع العام) — المرحلة الجاية: صورة مولّدة لكل وظيفة
+  // بعنوانها واسم الشركة عن طريق Next.js ImageResponse بدل الصورة الثابتة دي.
+  const ogImage = { url: "/og-image.png", width: 1200, height: 630, alt: title };
+
   return {
-    title: `${job.title} - وظيفة على منصة الشغل`,
+    title,
     description,
     openGraph: {
-      title: `${job.title} - وظيفة على منصة الشغل`,
+      title: ogTitle,
       description,
+      url,
+      siteName: "الشغل",
+      images: [ogImage],
+      locale: "ar_EG",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: ogTitle,
+      description,
+      images: [ogImage.url],
     },
   };
 }
