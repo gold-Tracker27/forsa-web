@@ -7,6 +7,12 @@ export const metadata = {
   description: "تصفح أحدث الوظائف المتاحة في مصر على منصة الشغل — وظائف في كل التخصصات والمحافظات.",
 };
 
+// الصفحة دي مالهاش أي dynamic segment، فـNext.js كان بيعملها static prerender وقت الـbuild
+// ويسيبها في كاش (زي ما لقينا في companies/page.tsx) — يعني وظيفة جديدة منشورة معتفضلش
+// ظاهرة هنا لحد أول deploy جديد حتى لو باقي صفحات SEO (محافظة/تخصص) بتجيبها لايف صح.
+// force-dynamic بيضمن قراءة فريش من Firestore في كل طلب.
+export const dynamic = "force-dynamic";
+
 const POPULAR_COMBOS_COUNT = 8;
 
 export default async function JobsListPage() {
