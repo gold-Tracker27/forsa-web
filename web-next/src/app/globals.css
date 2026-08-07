@@ -81,6 +81,19 @@ a {
   }
 }
 
+/* كارتي اختيار الدور (باحث عن شغل / صاحب عمل) في الصفحة الرئيسية — جنب بعض على الديسكتوب،
+   وتحت بعض تلقائيًا على الشاشات الضيقة عشان بوكس المزايا مايتزنقش */
+.role-options-row {
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+@media (max-width: 700px) {
+  .role-options-row {
+    flex-direction: column;
+  }
+}
+
 /* عرض السيرة الذاتية القابلة للطباعة (ProfileTab) — بيظهر بس وقت الطباعة الفعلية */
 @media print {
   body * {

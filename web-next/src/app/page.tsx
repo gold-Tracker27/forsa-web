@@ -354,11 +354,8 @@ export default function LandingPage() {
           منصة توظيف مصرية · واستشارات موارد بشرية
         </span>
         <h1 style={{ fontSize: 32, color: COLORS.ink, marginBottom: 12 }}>
-          فرصتك الجاية... <span style={{ color: COLORS.stamp }}>مسجّلة هنا</span>
+          فرصتك الجاية... <span style={{ color: COLORS.stamp }}>موجودة هنا</span>
         </h1>
-        <p style={{ color: COLORS.inkSoft, fontSize: 16 }}>
-          باحث عن شغل يسجل بياناته مرة واحدة، وأي صاحب عمل يقدر يدوّر ويفلتر عليها فوراً.
-        </p>
         <div
           style={{
             display: "inline-block",
@@ -381,7 +378,7 @@ export default function LandingPage() {
             إنت مين؟
           </h2>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 480, margin: "0 auto" }}>
+          <div className="role-options-row" style={{ display: "flex", gap: 14, maxWidth: 820, margin: "0 auto" }}>
             <RoleOptionCard
               onClick={() => selectRole("job_seeker")}
               background={COLORS.ink}
@@ -747,7 +744,7 @@ function RoleOptionCard({
   bullets: string[];
 }) {
   return (
-    <div onClick={onClick} style={{ cursor: "pointer" }}>
+    <div onClick={onClick} style={{ cursor: "pointer", flex: "1 1 0", minWidth: 0 }}>
       {/* البوكس العلوي: الاختيار نفسه (أيقونة + اسم الدور) */}
       <button
         onClick={onClick}
