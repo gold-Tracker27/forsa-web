@@ -13,6 +13,7 @@ type Props = {
 export default function PrivacyTab({ initialData, onSaved }: Props) {
   const [consentToShare, setConsentToShare] = useState(true);
   const [hideCompanyNames, setHideCompanyNames] = useState(false);
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -20,6 +21,7 @@ export default function PrivacyTab({ initialData, onSaved }: Props) {
   useEffect(() => {
     setConsentToShare(initialData.consentToShare !== false);
     setHideCompanyNames(!!initialData.hideCompanyNames);
+    setEmailNotificationsEnabled(initialData.emailNotificationsEnabled !== false);
   }, [initialData]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -33,6 +35,7 @@ export default function PrivacyTab({ initialData, onSaved }: Props) {
     const data: any = {
       consentToShare,
       hideCompanyNames,
+      emailNotificationsEnabled,
       consentDate: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -58,10 +61,21 @@ export default function PrivacyTab({ initialData, onSaved }: Props) {
       <p style={{ fontSize: 12.5, color: "#4A5568", marginBottom: 10 }}>
         من غير ده، بروفايلك مش هيظهر في نتائج بحث أصحاب الأعمال.
       </p>
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
         <input type="checkbox" id="hideCompanyNamesCheck" checked={hideCompanyNames} onChange={(e) => setHideCompanyNames(e.target.checked)} />
         <label htmlFor="hideCompanyNamesCheck" style={{ fontSize: 13.5 }}>
           إخفاء أسماء الشركات في خبراتك السابقة (هيفضل المسمى الوظيفي والمدة بس)
+        </label>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <input
+          type="checkbox"
+          id="emailNotificationsCheck"
+          checked={emailNotificationsEnabled}
+          onChange={(e) => setEmailNotificationsEnabled(e.target.checked)}
+        />
+        <label htmlFor="emailNotificationsCheck" style={{ fontSize: 13.5 }}>
+          استقبال إيميل أسبوعي بالوظائف الجديدة المناسبة لك ووظايفك المحفوظة
         </label>
       </div>
 

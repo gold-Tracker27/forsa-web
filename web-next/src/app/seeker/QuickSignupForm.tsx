@@ -53,6 +53,7 @@ export default function QuickSignupForm({ onSaved }: Props) {
         specialization,
         consentToShare: true,
         isAvailable: true,
+        emailNotificationsEnabled: true,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
