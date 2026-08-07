@@ -28,6 +28,18 @@ function escapeHtml(value) {
   })[c]);
 }
 
+// هيدر موحّد لكل قوالب الإيميل — لوجو PNG بدل النص، لأن بعض عملاء البريد (خصوصًا نسخ
+// أوت لوك القديمة) مش بيدعموا الخطوط المرفوعة (Cairo/Tajawal) ولا SVG، فالنص كان بيظهر
+// بخط النظام الافتراضي بلا هوية بصرية واضحة. الصورة مستضافة على نفس دومين الموقع
+// (public/email-logo.png)، خلفية شفافة عشان تناسب أي لون هيدر.
+function buildEmailHeader() {
+  return `
+            <td style="background-color:#14213D;padding:24px 28px;text-align:center;border-radius:14px 14px 0 0;">
+              <img src="https://elshoghl.com/email-logo.png" width="160" height="40" alt="الشغل" style="display:block;margin:0 auto;border:0;outline:none;" />
+              <div style="font-family:'Tajawal',Tahoma,Arial,sans-serif;color:#E8A33D;font-size:13px;margin-top:8px;">منصة توظيف مصرية</div>
+            </td>`;
+}
+
 function buildInvitationEmailHtml({ companyName, jobTitle, jobLink }) {
   const safeCompany = escapeHtml(companyName);
   const safeJobTitle = escapeHtml(jobTitle);
@@ -46,10 +58,7 @@ function buildInvitationEmailHtml({ companyName, jobTitle, jobLink }) {
       <td align="center">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border-radius:14px;border:1px solid #DED2B5;">
           <tr>
-            <td style="background-color:#14213D;padding:26px 28px;text-align:center;border-radius:14px 14px 0 0;">
-              <div style="font-family:'Cairo',Tahoma,Arial,sans-serif;color:#ffffff;font-size:22px;font-weight:900;">الشغل</div>
-              <div style="font-family:'Tajawal',Tahoma,Arial,sans-serif;color:#E8A33D;font-size:13px;margin-top:4px;">منصة توظيف مصرية</div>
-            </td>
+            ${buildEmailHeader()}
           </tr>
           <tr>
             <td style="padding:28px;direction:rtl;text-align:right;">
@@ -140,10 +149,7 @@ function buildDailySummaryEmailHtml({ totalCount, jobs }) {
       <td align="center">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border-radius:14px;border:1px solid #DED2B5;">
           <tr>
-            <td style="background-color:#14213D;padding:26px 28px;text-align:center;border-radius:14px 14px 0 0;">
-              <div style="font-family:'Cairo',Tahoma,Arial,sans-serif;color:#ffffff;font-size:22px;font-weight:900;">الشغل</div>
-              <div style="font-family:'Tajawal',Tahoma,Arial,sans-serif;color:#E8A33D;font-size:13px;margin-top:4px;">منصة توظيف مصرية</div>
-            </td>
+            ${buildEmailHeader()}
           </tr>
           <tr>
             <td style="padding:28px;direction:rtl;text-align:right;">
@@ -253,10 +259,7 @@ function buildStatusUpdateEmailHtml({ jobTitle, companyName, status, jobLink }) 
       <td align="center">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border-radius:14px;border:1px solid #DED2B5;">
           <tr>
-            <td style="background-color:#14213D;padding:26px 28px;text-align:center;border-radius:14px 14px 0 0;">
-              <div style="font-family:'Cairo',Tahoma,Arial,sans-serif;color:#ffffff;font-size:22px;font-weight:900;">الشغل</div>
-              <div style="font-family:'Tajawal',Tahoma,Arial,sans-serif;color:#E8A33D;font-size:13px;margin-top:4px;">منصة توظيف مصرية</div>
-            </td>
+            ${buildEmailHeader()}
           </tr>
           <tr>
             <td style="padding:28px;direction:rtl;text-align:right;">
@@ -359,10 +362,7 @@ function buildWeeklyDigestEmailHtml({ newJobs, savedJobs, unsubscribeUrl }) {
       <td align="center">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border-radius:14px;border:1px solid #DED2B5;">
           <tr>
-            <td style="background-color:#14213D;padding:26px 28px;text-align:center;border-radius:14px 14px 0 0;">
-              <div style="font-family:'Cairo',Tahoma,Arial,sans-serif;color:#ffffff;font-size:22px;font-weight:900;">الشغل</div>
-              <div style="font-family:'Tajawal',Tahoma,Arial,sans-serif;color:#E8A33D;font-size:13px;margin-top:4px;">منصة توظيف مصرية</div>
-            </td>
+            ${buildEmailHeader()}
           </tr>
           <tr>
             <td style="padding:28px;direction:rtl;text-align:right;">
