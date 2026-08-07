@@ -131,7 +131,7 @@ export default function Navbar() {
         )}
         {showEmployerItems && (
           <>
-            <Link href="/employer?tab=company" style={linkStyle}>🏠 بيانات الشركة</Link>
+            <Link href="/employer?tab=company" style={linkStyle}>🏠 لوحة الشركة</Link>
             <Link href="/employer?tab=postjob" style={linkStyle}>📝 نشر وظيفة جديدة</Link>
             <Link href="/employer?tab=talent" style={linkStyle}>🔍 البحث عن كوادر</Link>
           </>
