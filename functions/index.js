@@ -6,6 +6,12 @@ const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
+
+// نفس القايمة المستخدمة في web-next (Navbar.tsx وadmin/page.tsx وpage.tsx) لتحديد حسابات
+// الأدمن — هنا بنستخدمها لتحويل الإيميل لـuid عشان نبعت إشعار داخلي (notifications collection
+// بتتفلتر بـuserId مش إيميل).
+const ADMIN_EMAILS = ["elshoghl27@gmail.com", "mohamedzakaria2727@gmail.com"];
 
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected
@@ -921,6 +927,42 @@ exports.onNewJobPostMatchSeekers = onDocumentCreated(
 
     await createNotificationsBatch(notifications, "onNewJobPostMatchSeekers");
     logger.info(`onNewJobPostMatchSeekers: اتبعت ${notifications.length} إشعار لوظيفة ${jobPostId}`);
+  }
+);
+
+// onDocumentCreated بيتنفذ مرة واحدة بالظبط لكل مستند job_posts جديد، فمفيش داعي لأي علامة
+// "اتبعت قبل كده" زي savedJobExpiryReminders (اللي بتشتغل على جدول متكرر فوق نفس المستندات).
+exports.onNewJobPostNotifyAdmins = onDocumentCreated(
+  { document: "job_posts/{jobPostId}" },
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+
+    const job = snap.data();
+    const jobPostId = event.params.jobPostId;
+    if (job.isActive !== true) return;
+
+    const jobTitle = job.title || "وظيفة";
+    const companyName = job.companyName || "شركة غير معلنة";
+    const message = `وظيفة جديدة منشورة: "${jobTitle}" من ${companyName}`;
+
+    const notifications = [];
+    for (const email of ADMIN_EMAILS) {
+      try {
+        const adminUser = await getAuth().getUserByEmail(email);
+        notifications.push({
+          userId: adminUser.uid,
+          type: "new_job_post_admin",
+          message,
+          link: "/admin",
+        });
+      } catch (err) {
+        logger.error(`onNewJobPostNotifyAdmins: فشل جلب حساب الأدمن ${email}`, err);
+      }
+    }
+
+    await createNotificationsBatch(notifications, "onNewJobPostNotifyAdmins");
+    logger.info(`onNewJobPostNotifyAdmins: اتبعت ${notifications.length} إشعار أدمن لوظيفة ${jobPostId}`);
   }
 );
 
