@@ -21,9 +21,10 @@ export default async function sitemap() {
 
   let jobPages: { url: string; lastModified: Date }[] = [];
   let governoratePages: { url: string; lastModified: Date }[] = [];
+  let specializationPages: { url: string; lastModified: Date }[] = [];
   let comboPages: { url: string; lastModified: Date }[] = [];
   try {
-    const { jobIds, governorates, combos } = await getActiveJobsSeoData();
+    const { jobIds, governorates, specializations, combos } = await getActiveJobsSeoData();
 
     jobPages = jobIds.map((id) => ({
       url: `${baseUrl}/jobs/${id}`,
@@ -35,6 +36,11 @@ export default async function sitemap() {
       lastModified: new Date(),
     }));
 
+    specializationPages = specializations.map((s) => ({
+      url: `${baseUrl}/jobs/specialization/${slugify(s)}`,
+      lastModified: new Date(),
+    }));
+
     comboPages = combos.map((c) => ({
       url: `${baseUrl}/jobs/${slugify(c.governorate)}/${slugify(c.specialization)}`,
       lastModified: new Date(),
@@ -43,5 +49,5 @@ export default async function sitemap() {
     console.error("Sitemap job fetch failed", err);
   }
 
-  return [...staticPages, ...jobPages, ...governoratePages, ...comboPages];
+  return [...staticPages, ...jobPages, ...governoratePages, ...specializationPages, ...comboPages];
 }

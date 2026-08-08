@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import ApplyButton from "./ApplyButton";
 import ShareButton from "@/components/ShareButton";
 import RelatedJobs from "./RelatedJobs";
-import { EXPERIENCE_LEVELS, findGovernorateBySlug } from "@/lib/constants";
+import { EXPERIENCE_LEVELS, findGovernorateBySlug, slugify } from "@/lib/constants";
 import { tagStyle, featuredPillStyle, JOB_TYPE_LABELS } from "@/lib/jobCardStyles";
 import { getActivePublicJobs, getActiveJobsSeoData } from "@/lib/publicJobsQuery";
 import BrowseSidebar from "@/components/BrowseSidebar";
@@ -161,6 +161,9 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
       getActiveJobsSeoData(),
     ]);
     const popularCombos = seoData.combos.slice(0, POPULAR_COMBOS_COUNT);
+    const specialtiesForGovernorate = seoData.combos
+      .filter((c) => c.governorate === governorate)
+      .sort((a, b) => b.count - a.count);
     return (
       <div dir="rtl" style={{ width: "100%", maxWidth: 1120, margin: "0 auto", padding: "40px 20px" }}>
         <h1 style={{ fontSize: 26, marginBottom: 6 }}>وظائف في {governorate}</h1>
@@ -181,6 +184,30 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                 <JobListItem key={job.id} job={job} />
               ))}
             </div>
+
+            {specialtiesForGovernorate.length > 0 && (
+              <div style={{ marginTop: 30, paddingTop: 20, borderTop: "1px solid #DED2B5" }}>
+                <h2 style={{ fontSize: 16, marginBottom: 12 }}>وظائف {governorate} حسب التخصص</h2>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {specialtiesForGovernorate.map((c) => (
+                    <Link
+                      key={c.specialization}
+                      href={`/jobs/${slugify(c.governorate)}/${slugify(c.specialization)}`}
+                      style={{
+                        fontSize: 13,
+                        background: "#F0EDE3",
+                        padding: "6px 14px",
+                        borderRadius: 999,
+                        color: "#14213D",
+                        textDecoration: "none",
+                      }}
+                    >
+                      {c.specialization} ({c.count})
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <BrowseSidebar combos={popularCombos} />

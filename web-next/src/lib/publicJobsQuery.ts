@@ -21,6 +21,7 @@ export type JobCombo = { governorate: string; specialization: string; count: num
 export async function getActiveJobsSeoData(): Promise<{
   jobIds: string[];
   governorates: string[];
+  specializations: string[];
   combos: JobCombo[];
 }> {
   const snap = await getDocs(query(collection(db, "job_posts"), where("isActive", "==", true)));
@@ -28,19 +29,22 @@ export async function getActiveJobsSeoData(): Promise<{
   const jobIds: string[] = [];
   const comboMap = new Map<string, JobCombo>();
   const govSet = new Set<string>();
+  const specSet = new Set<string>();
   const validGovernorates = new Set(GOVERNORATES);
   const validSpecializations = new Set(SPECIALIZATION_OPTIONS);
 
   // بعض بيانات الوظائف القديمة فيها قيم governorate/specialization مش مطابقة تمامًا
   // للقايمتين المعتمدتين (زي "المبيعات" بدل "مبيعات") — نتجاهلها هنا عشان منولدش
   // روابط sitemap أو "تصفح حسب" بترجع 404 لأن findGovernorateBySlug/findSpecialtyBySlug
-  // بيدوروا في القايمتين المعتمدتين بس.
+  // بيدوروا في القايمتين المعتمدتين بس. govSet وspecSet بيتسجّلوا كل واحد لوحده (مش مربوطين
+  // ببعض) عشان صفحات المحافظة-لوحدها والتخصص-لوحدها تشتغل حتى لو الوظيفة ناقصة البُعد التاني.
   for (const d of snap.docs) {
     const p = d.data() as any;
     if (p.expiresAt && p.expiresAt.toMillis() < now) continue;
     jobIds.push(d.id);
+    if (p.governorate && validGovernorates.has(p.governorate)) govSet.add(p.governorate);
+    if (p.specialization && validSpecializations.has(p.specialization)) specSet.add(p.specialization);
     if (!p.governorate || !validGovernorates.has(p.governorate)) continue;
-    govSet.add(p.governorate);
     if (!p.specialization || !validSpecializations.has(p.specialization)) continue;
     const key = `${p.governorate}|||${p.specialization}`;
     const existing = comboMap.get(key);
@@ -51,6 +55,7 @@ export async function getActiveJobsSeoData(): Promise<{
   return {
     jobIds,
     governorates: Array.from(govSet),
+    specializations: Array.from(specSet),
     combos: Array.from(comboMap.values()).sort((a, b) => b.count - a.count),
   };
 }
