@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import ShareButton from "@/components/ShareButton";
 import PostJobTab from "../employer/PostJobTab";
@@ -40,6 +40,8 @@ type Stats = {
   allPosts: number;
   activePosts: number;
   applications: number;
+  totalUsers: number;
+  activeUsers24h: number;
 };
 
 export default function AdminPage() {
@@ -67,13 +69,18 @@ export default function AdminPage() {
   async function loadStats() {
     setLoadingStats(true);
     try {
-      const [seekersSnap, employersSnap, postsSnap, activePostsSnap, appsSnap] = await Promise.all([
-        getDocs(collection(db, "job_seekers")),
-        getDocs(collection(db, "employers")),
-        getDocs(collection(db, "job_posts")),
-        getDocs(query(collection(db, "job_posts"), where("isActive", "==", true))),
-        getDocs(collection(db, "applications")),
-      ]);
+      const oneDayAgo = Timestamp.fromDate(new Date(Date.now() - 24 * 60 * 60 * 1000));
+
+      const [seekersSnap, employersSnap, postsSnap, activePostsSnap, appsSnap, totalUsersSnap, activeUsersSnap] =
+        await Promise.all([
+          getDocs(collection(db, "job_seekers")),
+          getDocs(collection(db, "employers")),
+          getDocs(collection(db, "job_posts")),
+          getDocs(query(collection(db, "job_posts"), where("isActive", "==", true))),
+          getDocs(collection(db, "applications")),
+          getDocs(collection(db, "users")),
+          getDocs(query(collection(db, "users"), where("lastActiveAt", ">=", oneDayAgo))),
+        ]);
 
       const premiumCount = employersSnap.docs.filter((d) => d.data().plan === "premium").length;
 
@@ -84,6 +91,8 @@ export default function AdminPage() {
         allPosts: postsSnap.size,
         activePosts: activePostsSnap.size,
         applications: appsSnap.size,
+        totalUsers: totalUsersSnap.size,
+        activeUsers24h: activeUsersSnap.size,
       });
 
       const appCounts: Record<string, number> = {};
@@ -153,6 +162,8 @@ export default function AdminPage() {
             marginBottom: 20,
           }}
         >
+          <StatCard label="نشطين آخر 24 ساعة" value={stats.activeUsers24h} />
+          <StatCard label="إجمالي المستخدمين المسجلين" value={stats.totalUsers} />
           <StatCard label="الباحثين عن عمل" value={stats.seekers} />
           <StatCard label="أصحاب الأعمال" value={stats.employers} />
           <StatCard label="منهم باقة مدفوعة" value={stats.premium} />

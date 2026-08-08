@@ -4,12 +4,16 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import NotificationBell from "./NotificationBell";
 import LogoMark from "./LogoMark";
 
 const ADMIN_EMAILS = ["elshoghl27@gmail.com", "mohamedzakaria2727@gmail.com"];
+
+// أقل فترة بين تحديثين لـlastActiveAt لنفس المستخدم — عشان مكتبش على Firestore في كل تحميل
+// صفحة، ده بيحصل مرة كل ساعة كحد أقصى لكل مستخدم بدل كل صفحة يفتحها.
+const ACTIVITY_UPDATE_INTERVAL_MS = 60 * 60 * 1000;
 
 export default function Navbar() {
   const router = useRouter();
@@ -50,6 +54,19 @@ export default function Navbar() {
         (userDoc) => {
           const type = userDoc.exists() ? userDoc.data().userType || null : null;
           setUserType(type);
+
+          // تحديث lastActiveAt لإحصائيات "المستخدمين النشطين" في لوحة الأدمن — بنستخدم نفس
+          // الـsnapshot المشترك ده بدل قراءة إضافية، وبنحدّث بس لو آخر تحديث أقدم من ساعة
+          // (أو أول مرة)، عشان منكتبش على Firestore في كل تحميل صفحة. لو المستند لسه ماتكتبش
+          // (سباق مع routeAfterAuth وقت أول تسجيل دخول) بنسيب الموضوع للـsnapshot الجاي.
+          if (userDoc.exists()) {
+            const lastActiveAt = userDoc.data().lastActiveAt as Timestamp | undefined;
+            if (!lastActiveAt || Date.now() - lastActiveAt.toMillis() > ACTIVITY_UPDATE_INTERVAL_MS) {
+              updateDoc(doc(db, "users", user.uid), { lastActiveAt: serverTimestamp() }).catch((err) => {
+                console.error("[Navbar] فشل تحديث lastActiveAt", err);
+              });
+            }
+          }
 
           unsubscribeEmployerDoc?.();
           unsubscribeEmployerDoc = null;
