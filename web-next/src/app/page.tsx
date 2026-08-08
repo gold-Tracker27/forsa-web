@@ -26,6 +26,10 @@ type Role = "job_seeker" | "employer";
 // الصفحة بتتحمّل من الصفر بعد الريدايركت، فأي state عادي في الكومبوننت بيتفقد.
 const PENDING_ROLE_STORAGE_KEY = "elshoghl_pending_auth_role";
 
+// نفس القايمة المستخدمة في Navbar.tsx وadmin/page.tsx لتحديد حساب الأدمن — لو الإيميل مطابق،
+// التوجيه التلقائي هنا لازم يودّي لـ/admin بدل /seeker أو /employer.
+const ADMIN_EMAILS = ["elshoghl27@gmail.com", "mohamedzakaria2727@gmail.com"];
+
 const COLORS = {
   ink: "#14213D",
   inkSoft: "#4A5568",
@@ -100,6 +104,10 @@ export default function LandingPage() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user || localStorage.getItem(PENDING_ROLE_STORAGE_KEY) || authInProgressRef.current) {
         setCheckingSession(false);
+        return;
+      }
+      if (ADMIN_EMAILS.includes(user.email || "")) {
+        router.replace("/admin");
         return;
       }
       try {
