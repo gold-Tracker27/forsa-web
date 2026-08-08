@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { doc, updateDoc } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { normalizeEntries, SkillEntry } from "@/lib/profileFields";
 import { MILITARY_STATUS_LABELS, SKILL_LEVELS, LANGUAGE_LEVELS } from "@/lib/constants";
+import { calculateProfileCompletion } from "@/lib/profileCompletion";
+import CVPreview from "./CVPreview";
 import {
   jobCardContainerStyle,
   tagStyle,
@@ -16,6 +18,10 @@ import {
   applicationStatusOf,
 } from "@/lib/jobCardStyles";
 import { TagIcon, PinIcon, BriefcaseIcon, ShieldIcon, DocumentIcon } from "./icons";
+
+// أقل نسبة اكتمال بروفايل مقبولة لعرض سيرة ذاتية تلقائية مفيدة لصاحب العمل — تحتها البيانات
+// ناقصة جدًا وعرضها هيدي انطباع غلط عن الباحث بدل ما يساعد.
+const MIN_COMPLETION_FOR_AUTO_CV = 50;
 
 type ScreeningQuestion = { id: string; text: string; type: "text" | "number"; required: boolean };
 
@@ -36,6 +42,7 @@ export default function ApplicantCard({ applicant: a, screeningQuestions }: Prop
   const [status, setStatus] = useState<ApplicationStatus>(applicationStatusOf(a));
   const [savingStatus, setSavingStatus] = useState(false);
   const [statusError, setStatusError] = useState("");
+  const [showAutoCV, setShowAutoCV] = useState(false);
 
   async function handleStatusChange(newStatus: ApplicationStatus) {
     if (!a.jobPostId || !a.seekerId) {
@@ -133,7 +140,7 @@ export default function ApplicantCard({ applicant: a, screeningQuestions }: Prop
       <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #14213D14", display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ fontSize: 16 }}>📞 <strong>{s.phone || "—"}</strong></div>
         {s.email && <div style={{ fontSize: 16 }}>✉️ {s.email}</div>}
-        {s.cvFileURL && (
+        {s.cvFileURL ? (
           <a
             href={s.cvFileURL}
             target="_blank"
@@ -149,6 +156,22 @@ export default function ApplicantCard({ applicant: a, screeningQuestions }: Prop
           >
             <DocumentIcon size={17} /> عرض السيرة الذاتية
           </a>
+        ) : (
+          a.seekerId && (
+            <button
+              onClick={() => setShowAutoCV(true)}
+              style={{
+                ...bigGhostActionStyle,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginTop: 6,
+                cursor: "pointer",
+              }}
+            >
+              <DocumentIcon size={17} /> عرض سيرة ذاتية تلقائية (من البروفايل)
+            </button>
+          )
         )}
       </div>
 
@@ -164,6 +187,93 @@ export default function ApplicantCard({ applicant: a, screeningQuestions }: Prop
           )}
         </div>
       )}
+
+      {showAutoCV && a.seekerId && <AutoCVModal seekerId={a.seekerId} onClose={() => setShowAutoCV(false)} />}
+    </div>
+  );
+}
+
+function AutoCVModal({ seekerId, onClose }: { seekerId: string; onClose: () => void }) {
+  const [state, setState] = useState<"loading" | "ready" | "low-completion" | "error">("loading");
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, "job_seekers", seekerId));
+        if (!snap.exists()) {
+          setState("error");
+          return;
+        }
+        const seekerData = snap.data();
+        if (calculateProfileCompletion(seekerData) < MIN_COMPLETION_FOR_AUTO_CV) {
+          setState("low-completion");
+          return;
+        }
+        setData(seekerData);
+        setState("ready");
+      } catch (err) {
+        console.error("[ApplicantCard] فشل جلب بيانات الباحث لتوليد السيرة الذاتية التلقائية", err);
+        setState("error");
+      }
+    })();
+  }, [seekerId]);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(20,33,61,0.55)",
+        zIndex: 100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#fff",
+          borderRadius: 12,
+          padding: 24,
+          maxWidth: 750,
+          width: "100%",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          position: "relative",
+        }}
+      >
+        <button
+          onClick={onClose}
+          style={{
+            position: "absolute",
+            top: 14,
+            left: 14,
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            border: "1.5px solid #ccc",
+            background: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          ✕
+        </button>
+
+        {state === "loading" && <p style={{ textAlign: "center", padding: 40, color: "#4A5568" }}>جاري تجهيز السيرة الذاتية...</p>}
+        {state === "error" && <p style={{ textAlign: "center", padding: 40, color: "#B03A14" }}>حصلت مشكلة في جلب بيانات الباحث، حاول تاني.</p>}
+        {state === "low-completion" && (
+          <p style={{ textAlign: "center", padding: 40, color: "#4A5568" }}>
+            الباحث لسه ما استكملش بياناته الأساسية بشكل كافي لعرض سيرة ذاتية مفيدة.
+          </p>
+        )}
+        {state === "ready" && data && (
+          <CVPreview data={data} skills={normalizeEntries(data.skills)} languages={normalizeEntries(data.languages)} autoGenerated />
+        )}
+      </div>
     </div>
   );
 }
