@@ -31,8 +31,17 @@ export default function ApplyButton({ jobId, employerId, screeningQuestions = []
       }
       setLoggedIn(true);
       const appId = `${jobId}_${user.uid}`;
-      const appSnap = await getDoc(doc(db, "applications", appId));
-      setApplied(appSnap.exists());
+      try {
+        const appSnap = await getDoc(doc(db, "applications", appId));
+        setApplied(appSnap.exists());
+      } catch (err) {
+        // قواعد Firestore بترفض قراءة مستند applications/{id} لما لسه مش موجود (أول تقديم
+        // من المستخدم ده على الوظيفة دي) بـpermission-denied بدل ما ترجعه "مش موجود" —
+        // من غير الـcatch ده، setLoading(false) تحت مبتتنفذش خالص وزرار "قدم الآن" بيفضل
+        // مختفي للأبد. لو القراءة فشلت لأي سبب، الافتراض الآمن إن المستخدم لسه ما قدّمش.
+        console.error("[ApplyButton] فشل التحقق من حالة التقديم السابق", err);
+        setApplied(false);
+      }
       setLoading(false);
     });
     return () => unsubscribe();
