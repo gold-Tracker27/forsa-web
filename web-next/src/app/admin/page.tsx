@@ -6,9 +6,12 @@ import { collection, getDocs, query, where, Timestamp } from "firebase/firestore
 import { auth, db } from "@/lib/firebase";
 import ShareButton from "@/components/ShareButton";
 import PostJobTab from "../employer/PostJobTab";
+import Link from "next/link";
 import { toggleJobActive, deleteJobPost, fetchApplicants, exportApplicantsCSV } from "@/lib/jobPostActions";
-import { EXPERIENCE_LEVELS } from "@/lib/constants";
+import { EXPERIENCE_LEVELS, slugify } from "@/lib/constants";
+import { getActiveJobsSeoData, type JobCombo } from "@/lib/publicJobsQuery";
 import ApplicantCard from "@/components/ApplicantCard";
+import BrowseByCombos from "@/components/BrowseByCombos";
 import {
   jobCardContainerStyle,
   tagStyle,
@@ -48,6 +51,7 @@ export default function AdminPage() {
   const [status, setStatus] = useState<"loading" | "denied" | "allowed">("loading");
   const [stats, setStats] = useState<Stats | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
+  const [seoData, setSeoData] = useState<{ governorates: string[]; specializations: string[]; combos: JobCombo[] } | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [editingPost, setEditingPost] = useState<EditingPost>(null);
   const [openApplicantsFor, setOpenApplicantsFor] = useState<string | null>(null);
@@ -71,7 +75,7 @@ export default function AdminPage() {
     try {
       const oneDayAgo = Timestamp.fromDate(new Date(Date.now() - 24 * 60 * 60 * 1000));
 
-      const [seekersSnap, employersSnap, postsSnap, activePostsSnap, appsSnap, totalUsersSnap, activeUsersSnap] =
+      const [seekersSnap, employersSnap, postsSnap, activePostsSnap, appsSnap, totalUsersSnap, activeUsersSnap, jobsSeoData] =
         await Promise.all([
           getDocs(collection(db, "job_seekers")),
           getDocs(collection(db, "employers")),
@@ -80,7 +84,14 @@ export default function AdminPage() {
           getDocs(collection(db, "applications")),
           getDocs(collection(db, "users")),
           getDocs(query(collection(db, "users"), where("lastActiveAt", ">=", oneDayAgo))),
+          getActiveJobsSeoData(),
         ]);
+
+      setSeoData({
+        governorates: jobsSeoData.governorates,
+        specializations: jobsSeoData.specializations,
+        combos: jobsSeoData.combos,
+      });
 
       const premiumCount = employersSnap.docs.filter((d) => d.data().plan === "premium").length;
 
@@ -187,6 +198,49 @@ export default function AdminPage() {
       >
         {loadingStats ? "جاري التحديث..." : "🔄 تحديث"}
       </button>
+
+      {seoData && (seoData.combos.length > 0 || seoData.governorates.length > 0 || seoData.specializations.length > 0) && (
+        <details style={{ marginBottom: 30, border: "1px solid #14213D22", borderRadius: 8, padding: 14 }}>
+          <summary style={{ cursor: "pointer", fontSize: 15, fontWeight: 700, color: "#14213D" }}>
+            🔍 تصفح حسب (نفس الروابط اللي الزوار بيشوفوها)
+          </summary>
+
+          {seoData.combos.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#4A5568", marginBottom: 8 }}>
+                أشهر التركيبات (محافظة + تخصص)
+              </div>
+              <BrowseByCombos combos={seoData.combos.slice(0, 12)} variant="inline" />
+            </div>
+          )}
+
+          {seoData.governorates.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#4A5568", marginBottom: 8 }}>المحافظات</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {seoData.governorates.map((g) => (
+                  <Link key={g} href={`/jobs/${slugify(g)}`} style={{ ...tagStyle, textDecoration: "none", color: "#14213D", padding: "8px 14px", fontSize: 13.5 }}>
+                    وظائف {g}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {seoData.specializations.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#4A5568", marginBottom: 8 }}>التخصصات</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {seoData.specializations.map((s) => (
+                  <Link key={s} href={`/jobs/specialization/${slugify(s)}`} style={{ ...tagStyle, textDecoration: "none", color: "#14213D", padding: "8px 14px", fontSize: 13.5 }}>
+                    وظائف {s}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </details>
+      )}
 
       <h2 style={{ fontSize: 18, marginBottom: 16 }}>كل الإعلانات المنشورة على الموقع</h2>
 
