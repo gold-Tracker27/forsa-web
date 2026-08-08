@@ -56,13 +56,23 @@ export default function UpgradeModal({ onClose }: Props) {
         </button>
 
         <h2 style={{ marginBottom: 6 }}>⭐ الترقية للباقة المدفوعة</h2>
-        <p style={{ color: "#4A5568", fontSize: 14, marginBottom: 16 }}>الباقة المدفوعة بتديك:</p>
 
+        <p style={{ color: "#4A5568", fontSize: 13.5, marginBottom: 6, fontWeight: 700 }}>الباقة المجانية بتديك:</p>
+        <ul style={{ margin: "0 0 16px", padding: "0 20px", lineHeight: 1.9, fontSize: 13.5, color: "#4A5568" }}>
+          <li>5 إعلانات وظائف شهريًا، كل وظيفة نشطة 30 يوم</li>
+          <li>5 دعوات مباشرة للكوادر شهريًا</li>
+          <li>من غير إمكانية التواصل المباشر مع الكوادر</li>
+        </ul>
+
+        <p style={{ color: "#4A5568", fontSize: 14, marginBottom: 6, fontWeight: 700 }}>الترقية للباقة المدفوعة بتديك:</p>
         <ul style={{ margin: "0 0 20px", padding: "0 20px", lineHeight: 2, fontSize: 14.5 }}>
-          <li>عدد إعلانات أكبر شهريًا — <strong>10 إعلانات</strong> بدل 5</li>
-          <li>إمكانية تمييز إعلاناتك بشارة <strong>⭐ مميز</strong></li>
-          <li>ظهور إعلاناتك المميزة <strong>في الأول</strong> في نتائج بحث الباحثين عن عمل</li>
-          <li>التواصل المباشر مع الكوادر (تليفون وإيميل) من تبويب <strong>"البحث عن كوادر"</strong></li>
+          <li>10 إعلانات وظائف شهريًا (بدل 5) — كل وظيفة نشطة 60 يوم (بدل 30)</li>
+          <li>30 دعوة مباشرة للكوادر شهريًا (بدل 5)</li>
+          <li>إمكانية تمييز إعلاناتك بشارة <strong>⭐ مميز</strong> — تظهر أول نتائج بحث الباحثين عن عمل</li>
+          <li>
+            التواصل المباشر مع الكوادر (تليفون وإيميل) من تبويب <strong>"البحث عن كوادر"</strong> —
+            لحد 30 عملية فتح بيانات تواصل شهريًا
+          </li>
         </ul>
 
         <p style={{ fontSize: 13.5, color: "#4A5568", marginBottom: 12 }}>

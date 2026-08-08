@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { collection, doc, getDocs, query, serverTimestamp, setDoc, where } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 import { MILITARY_STATUS_LABELS, SKILL_LEVELS, LANGUAGE_LEVELS, EXPERIENCE_LEVELS } from "@/lib/constants";
 import { normalizeEntries, formatEntries } from "@/lib/profileFields";
 import UpgradeModal from "./UpgradeModal";
 import InviteToJobModal from "./InviteToJobModal";
+
+// نفس حد الدعوات الشهري (30 للباقة المدفوعة) لكن على كشف بيانات التواصل — بنعتبر كشف
+// بيانات نفس الباحث أكتر من مرة في نفس الشهر عملية واحدة بس (زي الدعوات بالظبط: doc id
+// ثابت employerId_seekerId بيتحدّث بـsetDoc بدل ما يتكرر)، عشان الحد يبقى 30 باحث مختلف
+// شهريًا مش 30 دوسة.
+const MONTHLY_CONTACT_REVEAL_LIMIT = 30;
 
 const EDUCATION_LABELS: Record<string, string> = {
   none: "بدون مؤهل دراسي",
@@ -35,6 +43,54 @@ export default function SeekerDetailModal({ seeker: s, employerPlan, onClose }: 
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const isPremium = employerPlan === "premium";
+  const [contactState, setContactState] = useState<"loading" | "allowed" | "limit-reached">(
+    isPremium ? "loading" : "allowed"
+  );
+
+  useEffect(() => {
+    if (!isPremium) {
+      setContactState("allowed");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const revealsSnap = await getDocs(query(collection(db, "contact_reveals"), where("employerId", "==", user.uid)));
+        const revealsThisMonth = revealsSnap.docs.filter((d) => {
+          const t = d.data().createdAt;
+          return t && t.toMillis() >= startOfMonth.getTime();
+        });
+        const alreadyRevealedThisSeeker = revealsThisMonth.some((d) => d.data().seekerId === s.id);
+
+        if (revealsThisMonth.length >= MONTHLY_CONTACT_REVEAL_LIMIT && !alreadyRevealedThisSeeker) {
+          if (!cancelled) setContactState("limit-reached");
+          return;
+        }
+
+        if (!alreadyRevealedThisSeeker) {
+          await setDoc(doc(db, "contact_reveals", `${user.uid}_${s.id}`), {
+            employerId: user.uid,
+            seekerId: s.id,
+            createdAt: serverTimestamp(),
+          });
+        }
+        if (!cancelled) setContactState("allowed");
+      } catch (err) {
+        console.error("[SeekerDetailModal] فشل التحقق من حد كشف بيانات التواصل الشهري", err);
+        if (!cancelled) setContactState("allowed");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPremium, s.id]);
 
   const skills = normalizeEntries(s.skills);
   const languages = normalizeEntries(s.languages);
@@ -141,7 +197,19 @@ export default function SeekerDetailModal({ seeker: s, employerPlan, onClose }: 
 
           <hr style={{ margin: "20px 0", border: "none", borderTop: "1px solid #14213D22" }} />
 
-          {isPremium ? (
+          {isPremium && contactState === "loading" && (
+            <div style={{ fontSize: 13.5, color: "#4A5568" }}>جاري التحقق من بيانات التواصل...</div>
+          )}
+
+          {isPremium && contactState === "limit-reached" && (
+            <div style={{ background: "#F5EFDE", padding: 16, borderRadius: 8 }}>
+              <p style={{ fontSize: 13.5, color: "#B03A14" }}>
+                وصلت للحد الأقصى ({MONTHLY_CONTACT_REVEAL_LIMIT} عملية كشف بيانات تواصل) للباقة المدفوعة الشهر ده.
+              </p>
+            </div>
+          )}
+
+          {isPremium && contactState === "allowed" ? (
             <div>
               <h3 style={{ fontSize: 15, marginBottom: 10 }}>بيانات التواصل</h3>
               <div style={{ fontSize: 14.5, marginBottom: 6 }}>📞 <strong>{s.phone || "—"}</strong></div>
@@ -158,7 +226,7 @@ export default function SeekerDetailModal({ seeker: s, employerPlan, onClose }: 
                 ✉️ ادعُه للتقديم على وظيفة
               </button>
             </div>
-          ) : (
+          ) : !isPremium ? (
             <div style={{ background: "#F5EFDE", padding: 16, borderRadius: 8 }}>
               <p style={{ fontSize: 13.5, color: "#4A5568", marginBottom: 12 }}>
                 التواصل المباشر مع الكوادر (تليفون، إيميل، السيرة الذاتية) متاح بس للباقة المدفوعة.
@@ -170,7 +238,7 @@ export default function SeekerDetailModal({ seeker: s, employerPlan, onClose }: 
                 🚀 طلب الترقية للباقة المدفوعة
               </button>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 
