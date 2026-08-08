@@ -35,7 +35,7 @@ function escapeHtml(value) {
 function buildEmailHeader() {
   return `
             <td style="background-color:#14213D;padding:24px 28px;text-align:center;border-radius:14px 14px 0 0;">
-              <img src="https://elshoghl.com/email-logo.png" width="160" height="40" alt="الشغل" style="display:block;margin:0 auto;border:0;outline:none;" />
+              <img src="https://www.elshoghl.com/email-logo.png" width="160" height="40" alt="الشغل" style="display:block;margin:0 auto;border:0;outline:none;" />
               <div style="font-family:'Tajawal',Tahoma,Arial,sans-serif;color:#E8A33D;font-size:13px;margin-top:8px;">منصة توظيف مصرية</div>
             </td>`;
 }
@@ -98,7 +98,7 @@ function buildInvitationEmailHtml({ companyName, jobTitle, jobLink }) {
             <td style="padding:18px 28px;background-color:#F1EAD9;text-align:center;border-radius:0 0 14px 14px;">
               <div style="font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:12px;color:#4A5568;">
                 الشغل — منصة توظيف مصرية ·
-                <a href="https://elshoghl.com" style="color:#14213D;text-decoration:underline;">elshoghl.com</a>
+                <a href="https://www.elshoghl.com" style="color:#14213D;text-decoration:underline;">elshoghl.com</a>
               </div>
             </td>
           </tr>
@@ -171,7 +171,7 @@ function buildDailySummaryEmailHtml({ totalCount, jobs }) {
                     <table role="presentation" cellpadding="0" cellspacing="0">
                       <tr>
                         <td style="border-radius:8px;background-color:#14213D;">
-                          <a href="https://elshoghl.com/employer" target="_blank" style="display:inline-block;padding:13px 30px;font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">
+                          <a href="https://www.elshoghl.com/employer" target="_blank" style="display:inline-block;padding:13px 30px;font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">
                             عرض التفاصيل من لوحة صاحب العمل
                           </a>
                         </td>
@@ -186,7 +186,7 @@ function buildDailySummaryEmailHtml({ totalCount, jobs }) {
             <td style="padding:18px 28px;background-color:#F1EAD9;text-align:center;border-radius:0 0 14px 14px;">
               <div style="font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:12px;color:#4A5568;">
                 الشغل — منصة توظيف مصرية ·
-                <a href="https://elshoghl.com" style="color:#14213D;text-decoration:underline;">elshoghl.com</a>
+                <a href="https://www.elshoghl.com" style="color:#14213D;text-decoration:underline;">elshoghl.com</a>
               </div>
             </td>
           </tr>
@@ -204,7 +204,7 @@ function buildDailySummaryEmailText({ totalCount, jobs }) {
     "",
     ...jobs.map((j) => `- ${j.title}: ${j.count} متقدم`),
     "",
-    "اعرض التفاصيل من لوحة صاحب العمل: https://elshoghl.com/employer",
+    "اعرض التفاصيل من لوحة صاحب العمل: https://www.elshoghl.com/employer",
     "",
     "الشغل — منصة توظيف مصرية · elshoghl.com",
   ].join("\n");
@@ -294,7 +294,7 @@ function buildStatusUpdateEmailHtml({ jobTitle, companyName, status, jobLink }) 
             <td style="padding:18px 28px;background-color:#F1EAD9;text-align:center;border-radius:0 0 14px 14px;">
               <div style="font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:12px;color:#4A5568;">
                 الشغل — منصة توظيف مصرية ·
-                <a href="https://elshoghl.com" style="color:#14213D;text-decoration:underline;">elshoghl.com</a>
+                <a href="https://www.elshoghl.com" style="color:#14213D;text-decoration:underline;">elshoghl.com</a>
               </div>
             </td>
           </tr>
@@ -329,7 +329,7 @@ function buildJobRowHtml(j, ctaLabel) {
                       <div style="font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:13px;color:#4A5568;margin-bottom:10px;">
                         ${meta}
                       </div>
-                      <a href="https://elshoghl.com/jobs/${j.id}" target="_blank" style="display:inline-block;padding:8px 18px;font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:13px;font-weight:700;color:#ffffff;background-color:#14213D;text-decoration:none;border-radius:6px;">
+                      <a href="https://www.elshoghl.com/jobs/${j.id}" target="_blank" style="display:inline-block;padding:8px 18px;font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:13px;font-weight:700;color:#ffffff;background-color:#14213D;text-decoration:none;border-radius:6px;">
                         ${ctaLabel}
                       </a>
                     </td>
@@ -377,7 +377,7 @@ function buildWeeklyDigestEmailHtml({ newJobs, savedJobs, unsubscribeUrl }) {
             <td style="padding:18px 28px;background-color:#F1EAD9;text-align:center;border-radius:0 0 14px 14px;">
               <div style="font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:12px;color:#4A5568;margin-bottom:8px;">
                 الشغل — منصة توظيف مصرية ·
-                <a href="https://elshoghl.com" style="color:#14213D;text-decoration:underline;">elshoghl.com</a>
+                <a href="https://www.elshoghl.com" style="color:#14213D;text-decoration:underline;">elshoghl.com</a>
               </div>
               <div style="font-family:'Tajawal',Tahoma,Arial,sans-serif;font-size:11.5px;color:#4A5568;">
                 <a href="${unsubscribeUrl}" style="color:#4A5568;text-decoration:underline;">إلغاء الاشتراك من الإيميلات دي</a>
@@ -398,12 +398,12 @@ function buildWeeklyDigestEmailText({ newJobs, savedJobs, unsubscribeUrl }) {
     "",
     ...newJobs.map(
       (j) =>
-        `- ${j.title} (${[j.companyName, j.governorate, jobTypeLabel(j.jobType)].filter(Boolean).join(" · ")}): https://elshoghl.com/jobs/${j.id}`
+        `- ${j.title} (${[j.companyName, j.governorate, jobTypeLabel(j.jobType)].filter(Boolean).join(" · ")}): https://www.elshoghl.com/jobs/${j.id}`
     ),
   ];
   if (savedJobs.length > 0) {
     lines.push("", "متنساش، وظايفك المحفوظة لسه متاحة:", "");
-    lines.push(...savedJobs.map((j) => `- ${j.title}: https://elshoghl.com/jobs/${j.id}`));
+    lines.push(...savedJobs.map((j) => `- ${j.title}: https://www.elshoghl.com/jobs/${j.id}`));
   }
   lines.push("", "الشغل — منصة توظيف مصرية · elshoghl.com", "", `إلغاء الاشتراك من الإيميلات دي: ${unsubscribeUrl}`);
   return lines.join("\n");
@@ -426,7 +426,7 @@ function unsubscribePageHtml({ success, message }) {
     <div style="font-size:22px;font-weight:900;color:#14213D;margin-bottom:12px;">الشغل</div>
     <h2 style="color:#14213D;margin:0 0 12px;">${title}</h2>
     <p style="color:#4A5568;line-height:1.8;margin:0;">${body}</p>
-    <a href="https://elshoghl.com" style="display:inline-block;margin-top:20px;padding:10px 24px;background:#14213D;color:#fff;text-decoration:none;border-radius:8px;">رجوع للموقع</a>
+    <a href="https://www.elshoghl.com" style="display:inline-block;margin-top:20px;padding:10px 24px;background:#14213D;color:#fff;text-decoration:none;border-radius:8px;">رجوع للموقع</a>
   </div>
 </body>
 </html>`;
@@ -522,7 +522,7 @@ exports.onNewInvitation = onDocumentCreated(
         return;
       }
 
-      const jobLink = `https://elshoghl.com/jobs/${invitation.jobPostId}`;
+      const jobLink = `https://www.elshoghl.com/jobs/${invitation.jobPostId}`;
       const emailFields = { companyName, jobTitle, jobLink };
 
       await sendViaResend({
@@ -577,7 +577,7 @@ exports.onApplicationStatusChanged = onDocumentUpdated(
         return;
       }
 
-      const jobLink = `https://elshoghl.com/jobs/${after.jobPostId}`;
+      const jobLink = `https://www.elshoghl.com/jobs/${after.jobPostId}`;
       const emailFields = { jobTitle, companyName, status: afterStatus, jobLink };
 
       await sendViaResend({

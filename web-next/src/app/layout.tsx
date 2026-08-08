@@ -19,7 +19,7 @@ const tajawal = Tajawal({
   weight: ["400", "500", "700"],
 });
 
-const SITE_URL = "https://elshoghl.com";
+const SITE_URL = "https://www.elshoghl.com";
 const OG_IMAGE = {
   url: `${SITE_URL}/og-image.png`,
   width: 1200,

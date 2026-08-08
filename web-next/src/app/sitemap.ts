@@ -8,7 +8,7 @@ import { getActiveJobsSeoData } from "@/lib/publicJobsQuery";
 export const dynamic = "force-dynamic";
 
 export default async function sitemap() {
-  const baseUrl = "https://elshoghl.com";
+  const baseUrl = "https://www.elshoghl.com";
 
   const staticPages = [
     { url: baseUrl, lastModified: new Date() },
