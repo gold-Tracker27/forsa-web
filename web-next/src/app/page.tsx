@@ -126,6 +126,15 @@ export default function LandingPage() {
     const user = auth.currentUser;
     if (!user) return;
 
+    // لازم نفحص الأدمن هنا كمان قبل أي حاجة، مش بس في effect "مسجل دخول بالفعل" — لأن
+    // routeAfterAuth هي أول حاجة بتتنفذ فورًا بعد أي تسجيل دخول جديد (Google popup/redirect،
+    // إيميل، تليفون). من غير الفحص ده، حساب الأدمن كان بيتوجّه لـ/seeker أو /employer غلط،
+    // وكمان كان بيتكتب/يتحدّث userType بتاعه في Firestore بالدور اللي اختاره غلط بالصدفة.
+    if (ADMIN_EMAILS.includes(user.email || "")) {
+      router.push("/admin");
+      return;
+    }
+
     const userRef = doc(db, "users", user.uid);
     const snap = await getDoc(userRef);
 
