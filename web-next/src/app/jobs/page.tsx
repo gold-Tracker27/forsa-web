@@ -3,8 +3,8 @@ import BrowseByCombos from "@/components/BrowseByCombos";
 import JobListItem from "./JobListItem";
 
 export const metadata = {
-  title: "تصفح الوظائف - منصة الشغل",
-  description: "تصفح أحدث الوظائف المتاحة في مصر على منصة الشغل — وظائف في كل التخصصات والمحافظات.",
+  title: "وظايف شغل في مصر - تصفح كل الوظائف المتاحة | الشغل",
+  description: "دوّر على وظيفتك الجاية من هنا - وظايف شغل جديدة يوميًا في كل تخصصات ومحافظات مصر، على منصة الشغل المجانية بالكامل.",
 };
 
 // الصفحة دي مالهاش أي dynamic segment، فـNext.js كان بيعملها static prerender وقت الـbuild

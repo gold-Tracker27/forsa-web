@@ -36,11 +36,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const governorate = findGovernorateBySlug(decodeURIComponent(id));
   if (governorate) {
     const jobs = await getActivePublicJobs({ governorate });
-    const title = `وظائف في ${governorate} | الشغل`;
+    const title = `وظايف شغل في ${governorate} | الشغل`;
     const description =
       jobs.length > 0
-        ? `${jobs.length} وظيفة متاحة حاليًا في ${governorate} على منصة الشغل — تصفح وقدّم دلوقتي.`
-        : `تصفح أحدث الوظائف في ${governorate} على منصة الشغل.`;
+        ? `${jobs.length} وظيفة شغل متاحة حاليًا في ${governorate} على منصة الشغل — تصفح وقدّم دلوقتي.`
+        : `دوّر على وظايف شغل في ${governorate} على منصة الشغل.`;
     return {
       title,
       description,
@@ -79,6 +79,67 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       description,
       images: [ogImage.url],
     },
+  };
+}
+
+const EMPLOYMENT_TYPE_SCHEMA: Record<string, string> = {
+  full_time: "FULL_TIME",
+  part_time: "PART_TIME",
+  freelance: "CONTRACTOR",
+};
+
+// بيانات JobPosting المنظمة (schema.org) عشان الوظيفة تبقى مؤهلة للظهور في Google for Jobs.
+// datePosted وvalidThrough بياخدوا نفس createdAt/expiresAt المخزنين فعليًا وقت النشر، فمفيش
+// حساب مضاعف هنا. لو مفيش createdAt (سجل قديم جدًا ماكانش بيتسجل فيه التاريخ) بنرجع null
+// ومنعرضش الـscript خالص بدل ما نبعت بيانات ناقصة لجوجل.
+function buildJobPostingJsonLd(job: any) {
+  if (!job.createdAt?.toDate) return null;
+
+  const hasSalary = job.showSalary !== false && !job.salaryNegotiable && (job.salaryFrom || job.salaryTo);
+  const employmentType = EMPLOYMENT_TYPE_SCHEMA[job.jobType];
+
+  return {
+    "@context": "https://schema.org/",
+    "@type": "JobPosting",
+    title: job.title,
+    description: job.description || job.title,
+    identifier: { "@type": "PropertyValue", name: "الشغل", value: job.id },
+    datePosted: job.createdAt.toDate().toISOString(),
+    ...(job.expiresAt?.toDate ? { validThrough: job.expiresAt.toDate().toISOString() } : {}),
+    ...(employmentType ? { employmentType } : {}),
+    hiringOrganization: {
+      "@type": "Organization",
+      name: job.showCompanyName && job.companyName ? job.companyName : "شركة غير معلنة",
+    },
+    jobLocation: {
+      "@type": "Place",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: job.city,
+        addressRegion: job.governorate,
+        addressCountry: "EG",
+      },
+    },
+    ...(job.jobType === "remote"
+      ? {
+          jobLocationType: "TELECOMMUTE",
+          applicantLocationRequirements: { "@type": "Country", name: "Egypt" },
+        }
+      : {}),
+    ...(hasSalary
+      ? {
+          baseSalary: {
+            "@type": "MonetaryAmount",
+            currency: "EGP",
+            value: {
+              "@type": "QuantitativeValue",
+              minValue: job.salaryFrom || job.salaryTo,
+              maxValue: job.salaryTo || job.salaryFrom,
+              unitText: "MONTH",
+            },
+          },
+        }
+      : {}),
   };
 }
 
@@ -136,9 +197,16 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
 
   const seoData = await getActiveJobsSeoData();
   const popularCombos = seoData.combos.slice(0, POPULAR_COMBOS_COUNT);
+  const jobPostingJsonLd = buildJobPostingJsonLd(job);
 
   return (
     <div dir="rtl" style={{ width: "100%", maxWidth: 1020, margin: "0 auto", padding: "40px 20px" }}>
+      {jobPostingJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jobPostingJsonLd).replace(/</g, "\\u003c") }}
+        />
+      )}
       <div className="browse-layout">
         <div className="browse-main">
       <h1 style={{ fontSize: 26, marginBottom: 6 }}>{job.title}</h1>

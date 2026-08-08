@@ -27,13 +27,17 @@ const OG_IMAGE = {
   alt: "الشغل - منصة توظيف مصرية",
 };
 
+const HOME_TITLE = "الشغل - منصة وظايف مصر المجانية | دوّر على شغل بسهولة";
+const HOME_DESCRIPTION =
+  "منصة الشغل بتساعدك تلاقي وظيفتك المناسبة أو توظف كوادر لشركتك مجانًا بالكامل وبدون أي رسوم. آلاف وظايف الشغل في كل محافظات مصر - سجّل دلوقتي وابدأ.";
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "الشغل - منصة توظيف مصرية",
-  description: "الشغل: منصة توظيف مصرية للباحثين عن عمل وأصحاب الأعمال — وظائف يدوية ومكتبية بكل مصر.",
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
   openGraph: {
-    title: "الشغل - منصة توظيف مصرية",
-    description: "الشغل: منصة توظيف مصرية للباحثين عن عمل وأصحاب الأعمال — وظائف يدوية ومكتبية بكل مصر.",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     url: SITE_URL,
     siteName: "الشغل",
     images: [OG_IMAGE],
@@ -42,8 +46,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "الشغل - منصة توظيف مصرية",
-    description: "الشغل: منصة توظيف مصرية للباحثين عن عمل وأصحاب الأعمال — وظائف يدوية ومكتبية بكل مصر.",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     images: [OG_IMAGE.url],
   },
 };

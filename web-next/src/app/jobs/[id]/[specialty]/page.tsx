@@ -23,11 +23,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (!governorate || !specialization) return { title: "صفحة غير موجودة - الشغل" };
 
   const jobs = await getActivePublicJobs({ governorate, specialization });
-  const title = `وظائف ${specialization} في ${governorate} | الشغل`;
+  const title = `وظايف شغل ${specialization} في ${governorate} | الشغل`;
   const description =
     jobs.length > 0
       ? `${jobs.length} وظيفة ${specialization} متاحة حاليًا في ${governorate} على منصة الشغل — تصفح وقدّم دلوقتي.`
-      : `تصفح أحدث وظائف ${specialization} في ${governorate} على منصة الشغل.`;
+      : `دوّر على وظايف ${specialization} في ${governorate} على منصة الشغل.`;
 
   return {
     title,

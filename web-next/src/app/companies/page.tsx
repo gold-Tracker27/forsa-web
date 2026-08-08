@@ -3,8 +3,8 @@ import { collection, doc, getDoc, getDocs, query, where } from "firebase/firesto
 import { db } from "@/lib/firebase";
 
 export const metadata = {
-  title: "الشركات - منصة الشغل",
-  description: "تصفح الشركات اللي بتوظف حاليًا على منصة الشغل، وشوف كل وظائفها المفتوحة في مكان واحد.",
+  title: "الشركات اللي بتوظف دلوقتي في مصر - منصة الشغل",
+  description: "تصفح الشركات اللي بتدوّر على كوادر وبتوظف دلوقتي في مصر، وشوف كل وظايف الشغل المفتوحة عندها في مكان واحد على منصة الشغل.",
 };
 
 // الصفحة دي مالهاش أي dynamic segment، فـNext.js كان بيعملها static prerender وقت الـbuild
